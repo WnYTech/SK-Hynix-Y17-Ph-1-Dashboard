@@ -163,7 +163,7 @@ export default function App() {
     }
   };
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isProgram(page) ? 'log-design' : ''}`}>
       <aside className="sidebar">
         <a
           className="brand"

@@ -4,6 +4,7 @@ import {
   Download,
   FolderOpen,
   Info,
+  LoaderCircle,
   RotateCcw,
   Save,
   Search,
@@ -12,6 +13,7 @@ import {
 import type { Conditions, Fields, Metadata } from '../types';
 import { emptyFields, presetRange, timePresets } from '../lib/conditions';
 import { programs } from '../lib/programs';
+import SelectField from './SelectField';
 
 interface Props {
   conditions: Conditions;
@@ -56,20 +58,24 @@ export default function SearchPanel({
       />
     </label>
   );
-  const select = (key: keyof Fields, label: string, options: string[] = []) => (
-    <label className="field" key={key}>
-      <span>{label}</span>
-      <select value={c.fields[key]} onChange={(e) => field(key, e.target.value)}>
-        <option value="">전체</option>
-        {options.map((item) => (
-          <option key={item}>{item}</option>
-        ))}
-        {c.fields[key] && !options.includes(c.fields[key]) && (
-          <option value={c.fields[key]}>{c.fields[key]}</option>
-        )}
-      </select>
-    </label>
-  );
+  const select = (key: keyof Fields, label: string, options: string[] = []) => {
+    const values = [...options];
+    if (c.fields[key] && !values.includes(c.fields[key])) values.push(c.fields[key]);
+    return (
+      <div className="field" key={key}>
+        <span>{label}</span>
+        <SelectField
+          label={label}
+          value={c.fields[key]}
+          onChange={(value) => field(key, value)}
+          options={[
+            { value: '', label: '전체' },
+            ...values.map((value) => ({ value, label: value })),
+          ]}
+        />
+      </div>
+    );
+  };
   return (
     <section className="panel search-panel">
       <div className="panel-heading">
@@ -102,23 +108,14 @@ export default function SearchPanel({
             <span className="retention">최근 7일 이내</span>
           </div>
           <div className="time-controls">
-            <select
-              aria-label="조회 기간 프리셋"
+            <SelectField
+              label="조회 기간 프리셋"
               value={c.preset}
-              onChange={(e) =>
-                onChange({
-                  ...c,
-                  preset: e.target.value,
-                  ...(e.target.value === 'custom' ? {} : presetRange(e.target.value)),
-                })
+              onChange={(value) =>
+                onChange({ ...c, preset: value, ...(value === 'custom' ? {} : presetRange(value)) })
               }
-            >
-              {timePresets.map(([key, label]) => (
-                <option value={key} key={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
+              options={timePresets.map(([value, label]) => ({ value, label }))}
+            />
             <input
               aria-label="시작 시간"
               value={c.start}
@@ -236,8 +233,8 @@ export default function SearchPanel({
               <Download size={15} />
               다운로드
             </button>
-            <button type="submit" className="button primary" disabled={loading}>
-              <Search size={15} />
+            <button type="submit" className="button primary" disabled={loading} aria-busy={loading}>
+              {loading ? <LoaderCircle size={17} className="is-spinning" /> : <Search size={17} />}
               {loading ? '조회 중…' : '검색'}
             </button>
           </div>

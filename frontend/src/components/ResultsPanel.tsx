@@ -5,6 +5,7 @@ import {
   Copy,
   ExternalLink,
   ListFilter,
+  LoaderCircle,
   Search,
   Table2,
 } from 'lucide-react';
@@ -13,6 +14,7 @@ import type { Conditions, LogRecord, SearchResponse, SourceStatus } from '../typ
 import { formatDate } from '../lib/conditions';
 import { transactionIdentity } from '../lib/transactions';
 import { programs } from '../lib/programs';
+import SelectField from './SelectField';
 
 type Column = { key: keyof LogRecord; label: string; width: number };
 const columns: Column[] = [
@@ -208,7 +210,11 @@ export default function ResultsPanel({
           {!rows.length && (
             <div className="results-empty">
               <div className="empty-illustration">
-                <Table2 size={27} strokeWidth={1.4} />
+                {loading ? (
+                  <LoaderCircle size={27} className="is-spinning" />
+                ) : (
+                  <Table2 size={27} />
+                )}
                 <span>
                   <Search size={13} />
                 </span>
@@ -240,15 +246,15 @@ export default function ResultsPanel({
           <div className="table-footer">
             <div className="page-size">
               <ListFilter size={14} />
-              <select
-                aria-label="페이지당 행 수"
-                value={conditions.pageSize}
-                onChange={(e) => onPageSize(Number(e.target.value))}
-              >
-                <option value={100}>100 rows</option>
-                <option value={500}>500 rows</option>
-                <option value={1000}>1,000 rows</option>
-              </select>
+              <SelectField
+                label="페이지당 행 수"
+                value={String(conditions.pageSize)}
+                onChange={(value) => onPageSize(Number(value))}
+                options={[100, 500, 1000].map((value) => ({
+                  value: String(value),
+                  label: `${value.toLocaleString()} rows`,
+                }))}
+              />
               <span>페이지당</span>
             </div>
             <div className="pagination">

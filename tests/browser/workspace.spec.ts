@@ -32,7 +32,8 @@ test('checks typed dates before querying', async ({ page }) => {
   await viewer(page).getByLabel('시작 시간', { exact: true }).fill('2000-01-01 00:00:00');
   await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('최근 7일');
-  await viewer(page).getByLabel('조회 기간 프리셋').selectOption('7d');
+  await viewer(page).getByRole('combobox', { name: '조회 기간 프리셋' }).click();
+  await page.getByRole('option', { name: '최근 7일', exact: true }).click();
   await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('데이터 소스가 연결되지 않았습니다');
 });
@@ -116,7 +117,8 @@ test('saved conditions reopen the correct program and viewers remain independent
   await viewer(page).getByLabel('트랜잭션 키', { exact: true }).fill('saved-key');
   await viewer(page).getByRole('button', { name: '상세 검색조건' }).click();
   await viewer(page).getByLabel('Full Text').fill('saved-text');
-  await viewer(page).getByLabel('조회 기간 프리셋').selectOption('1h');
+  await viewer(page).getByRole('combobox', { name: '조회 기간 프리셋' }).click();
+  await page.getByRole('option', { name: '최근 1시간', exact: true }).click();
   await viewer(page).getByRole('button', { name: '조건 저장', exact: true }).click();
   await page.getByLabel('검색조건 이름').fill('ARC 기간 조건');
   await page.getByRole('button', { name: '저장', exact: true }).click();
@@ -127,7 +129,9 @@ test('saved conditions reopen the correct program and viewers remain independent
   await expect(page.locator('.saved-item')).toContainText('ARC LMS');
   await page.getByRole('button', { name: '불러오기', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ARC LMS', exact: false })).toBeVisible();
-  await expect(viewer(page).getByLabel('조회 기간 프리셋')).toHaveValue('1h');
+  await expect(viewer(page).getByRole('combobox', { name: '조회 기간 프리셋' })).toHaveText(
+    '최근 1시간',
+  );
   await expect(viewer(page).getByLabel('트랜잭션 키', { exact: true })).toHaveValue('saved-key');
   await viewer(page).getByRole('button', { name: '상세 검색조건' }).click();
   await expect(viewer(page).getByLabel('Full Text')).toHaveValue('saved-text');
@@ -245,4 +249,118 @@ test('larger typography stays readable on desktop and narrow layouts', async ({ 
     await page.screenshot({ path: `test-results/${program}-mobile.png`, fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1000 });
   }
+});
+
+test('WeshBoard design keeps controls aligned and popovers bounded and keyboard accessible', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByText('로그 데이터 소스를 연결해 주세요').waitFor();
+  const active = viewer(page);
+  const submit = active.getByRole('button', { name: '검색', exact: true });
+  await expect(submit).toHaveCSS('background-color', 'rgb(226, 88, 34)');
+  await submit.hover();
+  await expect(submit).toHaveCSS('background-color', 'rgb(197, 74, 24)');
+  await expect(active.getByRole('button', { name: '로그 복사' })).toBeDisabled();
+  const inputBox = await active.getByLabel('시작 시간', { exact: true }).boundingBox();
+  const select = active.getByRole('combobox', { name: '조회 기간 프리셋' });
+  const selectBox = await select.boundingBox();
+  const buttonBox = await submit.boundingBox();
+  expect(inputBox!.height).toBe(42);
+  expect(selectBox!.height).toBe(inputBox!.height);
+  expect(buttonBox!.height).toBe(inputBox!.height);
+  await select.click();
+  const list = page.getByRole('listbox', { name: '조회 기간 프리셋' });
+  const popup = await list.boundingBox();
+  expect(Math.abs(popup!.width - selectBox!.width)).toBeLessThan(1);
+  expect(popup!.height).toBeLessThanOrEqual(224);
+  expect(await list.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  await page.screenshot({ path: 'test-results/design-dropdown.png' });
+  await select.press('End');
+  await select.press('Enter');
+  await expect(select).toHaveText('직접 입력');
+  await expect(list).not.toBeVisible();
+  await expect(select).toBeFocused();
+  await select.press('ArrowUp');
+  await select.press('Escape');
+  await expect(select).toHaveText('직접 입력');
+  await expect(list).not.toBeVisible();
+  await select.click();
+  await page.getByRole('heading', { name: '검색조건', exact: true }).click();
+  await expect(list).not.toBeVisible();
+  await select.click();
+  await select.press('Home');
+  await select.press('Tab');
+  await expect(list).not.toBeVisible();
+  await expect(active.getByLabel('시작 시간', { exact: true })).toBeFocused();
+  for (const width of [1280, 900, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await select.click();
+    const trigger = await select.boundingBox();
+    const bounds = await list.boundingBox();
+    expect(Math.abs(bounds!.width - trigger!.width)).toBeLessThan(1);
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(900);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    await select.press('Escape');
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('button', { name: '연결 상태 확인', exact: true }).click();
+  await expect(page.locator('.app-shell')).not.toHaveClass(/log-design/);
+  await page.locator('nav').getByRole('button', { name: 'ARC LMS', exact: true }).click();
+  await expect(page.locator('.app-shell')).toHaveClass(/log-design/);
+  await expect(viewer(page).getByRole('button', { name: '검색', exact: true })).toHaveCSS(
+    'background-color',
+    'rgb(226, 88, 34)',
+  );
+});
+
+test('query loading and errors use the same readable design without fake results', async ({
+  page,
+}) => {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/logs/search', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto('/#program=arc');
+  await viewer(page).getByLabel('트랜잭션 키', { exact: true }).fill('style-check-condition');
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
+  try {
+    const busy = viewer(page).getByRole('button', { name: '조회 중…' });
+    await expect(busy).toBeDisabled();
+    await expect(busy).toHaveAttribute('aria-busy', 'true');
+    await expect(viewer(page).locator('.results-panel')).toHaveAttribute('aria-busy', 'true');
+    await expect(busy).toHaveCSS('background-color', 'rgb(251, 231, 220)');
+    await page.screenshot({ path: 'test-results/design-loading.png', fullPage: true });
+  } finally {
+    release();
+  }
+  await expect(page.getByRole('alert')).toContainText('데이터 소스가 연결되지 않았습니다');
+  await expect(page.getByRole('alert')).toHaveCSS('color', 'rgb(138, 31, 17)');
+  await expect(viewer(page).locator('.log-table tbody tr')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/design-error.png', fullPage: true });
+  await viewer(page).getByRole('button', { name: '다운로드', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Excel', { exact: false }).check();
+  await expect(page.getByRole('dialog').locator('.format-options .checked')).toHaveCSS(
+    'border-top-color',
+    'rgb(226, 88, 34)',
+  );
+  await page.screenshot({ path: 'test-results/design-download-dialog.png', fullPage: true });
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await viewer(page).getByRole('button', { name: '로그 상세 확대' }).click();
+  const detail = page.getByRole('dialog');
+  await expect(detail).toBeVisible();
+  expect(await detail.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await expect(detail.getByRole('combobox', { name: '로그 표시 형식' })).toBeDisabled();
+  await page.screenshot({ path: 'test-results/design-detail-dialog-mobile.png' });
+  await detail.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(detail).not.toBeVisible();
 });

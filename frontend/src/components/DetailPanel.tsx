@@ -14,6 +14,7 @@ import { programs } from '../lib/programs';
 import { api } from '../lib/api';
 import { formatDate } from '../lib/conditions';
 import Dialog from './Dialog';
+import SelectField from './SelectField';
 
 function pretty(value: string, mode: string) {
   if (mode === 'raw' || !value) return value;
@@ -163,17 +164,18 @@ export default function DetailPanel({ program, selected, search, onMessage }: Pr
           <span>{selected ? 'message' : 'Log message'}</span>
         </div>
         <div className="button-group">
-          <select
-            aria-label="로그 표시 형식"
+          <SelectField
+            label="로그 표시 형식"
             value={mode}
-            onChange={(e) => setMode(e.target.value)}
+            onChange={setMode}
             disabled={!selected || currentTab !== 'single'}
-          >
-            <option value="raw">원문</option>
-            <option value="xml">XML</option>
-            <option value="sql">SQL</option>
-            <option value="json">JSON</option>
-          </select>
+            options={[
+              { value: 'raw', label: '원문' },
+              { value: 'xml', label: 'XML' },
+              { value: 'sql', label: 'SQL' },
+              { value: 'json', label: 'JSON' },
+            ]}
+          />
           <button
             className="icon-button"
             aria-label="로그 복사"

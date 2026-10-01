@@ -28,6 +28,8 @@ flowchart LR
 | `src/pages/auth/AiSettingsSection.tsx`, `Admin.css`                                       | 라벨과 폼의 간격, 포커스 테두리, 선택된 설정 카드                                     | 검색 입력과 다운로드 형식 선택           |
 | `src/components/agent/AgentWidget.tsx`, `AgentWidget.css`, `src/App.css`                  | 본문 14px 이상과 충분한 행간, 답변 표의 배경과 테두리, 내부 스크롤                    | 로그 본문과 Key / Value 상세             |
 
+최신 색상 지시에 따라 강조색은 사용자가 첨부한 SK hynix 로고의 빨강 / 주황 톤으로 조정했습니다. 주 동작과 선택 상태는 `#ea002c`, 섹션 아이콘과 보조 강조는 `#f58220`을 사용하며, WeshBoard에서 참고한 패널 구조와 간격은 유지합니다.
+
 구현은 `frontend/src/log-design.css`의 `.log-design` 하위로 제한합니다. Acell / ARC 화면과 여기서 여는 대화상자에 적용하며, 다운로드 목록 / 저장조건 목록 / 연결 상태 페이지의 디자인과 메뉴 구조는 유지합니다. 버튼과 입력은 42px 높이, 입력 글씨는 16px, 검색 라벨과 결과 컬럼은 14px 이상입니다. 아이콘은 비교 분석 화면에서도 사용 중인 Lucide로 통일합니다. 기존 요구사항인 동일 트랜잭션 분홍색 / 선택 값 노란색 강조는 별도의 의미 표시로 유지합니다.
 
 `SelectField`는 브라우저 Popover API로 패널 잘림을 피하고 트리거 너비와 화면 안의 위치를 유지합니다. 긴 목록 내부 스크롤, 방향키 / Home / End / Enter / Escape / Tab 및 입력 문자 탐색을 지원합니다. 데이터 조회 / 검색 API 로직은 변경하지 않습니다.

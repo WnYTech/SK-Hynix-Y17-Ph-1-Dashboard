@@ -258,9 +258,9 @@ test('WeshBoard design keeps controls aligned and popovers bounded and keyboard 
   await page.getByText('로그 데이터 소스를 연결해 주세요').waitFor();
   const active = viewer(page);
   const submit = active.getByRole('button', { name: '검색', exact: true });
-  await expect(submit).toHaveCSS('background-color', 'rgb(226, 88, 34)');
+  await expect(submit).toHaveCSS('background-color', 'rgb(234, 0, 44)');
   await submit.hover();
-  await expect(submit).toHaveCSS('background-color', 'rgb(197, 74, 24)');
+  await expect(submit).toHaveCSS('background-color', 'rgb(196, 0, 37)');
   await expect(active.getByRole('button', { name: '로그 복사' })).toBeDisabled();
   const inputBox = await active.getByLabel('시작 시간', { exact: true }).boundingBox();
   const select = active.getByRole('combobox', { name: '조회 기간 프리셋' });
@@ -314,7 +314,7 @@ test('WeshBoard design keeps controls aligned and popovers bounded and keyboard 
   await expect(page.locator('.app-shell')).toHaveClass(/log-design/);
   await expect(viewer(page).getByRole('button', { name: '검색', exact: true })).toHaveCSS(
     'background-color',
-    'rgb(226, 88, 34)',
+    'rgb(234, 0, 44)',
   );
 });
 
@@ -337,20 +337,20 @@ test('query loading and errors use the same readable design without fake results
     await expect(busy).toBeDisabled();
     await expect(busy).toHaveAttribute('aria-busy', 'true');
     await expect(viewer(page).locator('.results-panel')).toHaveAttribute('aria-busy', 'true');
-    await expect(busy).toHaveCSS('background-color', 'rgb(251, 231, 220)');
+    await expect(busy).toHaveCSS('background-color', 'rgb(253, 230, 235)');
     await page.screenshot({ path: 'test-results/design-loading.png', fullPage: true });
   } finally {
     release();
   }
   await expect(page.getByRole('alert')).toContainText('데이터 소스가 연결되지 않았습니다');
-  await expect(page.getByRole('alert')).toHaveCSS('color', 'rgb(138, 31, 17)');
+  await expect(page.getByRole('alert')).toHaveCSS('color', 'rgb(159, 18, 57)');
   await expect(viewer(page).locator('.log-table tbody tr')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/design-error.png', fullPage: true });
   await viewer(page).getByRole('button', { name: '다운로드', exact: true }).click();
   await page.getByRole('dialog').getByLabel('Excel', { exact: false }).check();
   await expect(page.getByRole('dialog').locator('.format-options .checked')).toHaveCSS(
     'border-top-color',
-    'rgb(226, 88, 34)',
+    'rgb(234, 0, 44)',
   );
   await page.screenshot({ path: 'test-results/design-download-dialog.png', fullPage: true });
   await page.keyboard.press('Escape');

@@ -1,24 +1,29 @@
-/* Acell / ARC only. Values selected from active WeshBoard master panels,
-   ComparisonAnalysis, Admin form controls, and AgentWidget message surfaces.
+/* Acell / ARC only. Structure follows active WeshBoard panels and controls.
+   Red/orange accent tones follow the user-provided SK hynix logo.
    Keep this scoped so the other pages retain their existing presentation. */
 .log-design {
-  --ws-background: #eef1f5;
+  --ws-background: #f5f5f6;
   --ws-surface: #fff;
-  --ws-surface-soft: #f4f6fa;
-  --ws-border: #d8dde5;
-  --ws-divider: #e7e9ed;
-  --ws-text: #1f2937;
-  --ws-secondary: #4b5563;
-  --ws-muted: #68717b;
-  --ws-primary: #e25822;
-  --ws-primary-hover: #c54a18;
-  --ws-primary-text: #a94711;
-  --ws-primary-soft: #fbe7dc;
-  --ws-primary-pale: #fff8f1;
-  --ws-primary-border: #e8bdab;
-  --ws-danger: #8a1f11;
-  --ws-danger-soft: #fdecea;
-  --ws-danger-border: #f5c6c2;
+  --ws-surface-soft: #f7f7f8;
+  --ws-border: #dedee2;
+  --ws-divider: #ededf0;
+  --ws-text: #242426;
+  --ws-secondary: #525257;
+  --ws-muted: #707077;
+  --ws-primary: #ea002c;
+  --ws-primary-hover: #c40025;
+  --ws-primary-text: #b80023;
+  --ws-primary-soft: #fde6eb;
+  --ws-primary-pale: #fff5f7;
+  --ws-primary-border: #f3b8c4;
+  --ws-accent: #f58220;
+  --ws-accent-text: #a54f0c;
+  --ws-accent-soft: #fff0e1;
+  --ws-accent-pale: #fffaf5;
+  --ws-accent-border: #f5cfae;
+  --ws-danger: #9f1239;
+  --ws-danger-soft: #fff1f2;
+  --ws-danger-border: #fecdd3;
   --ws-radius: 8px;
   --ws-control-height: 42px;
   --ws-card-shadow: 0 6px 16px rgb(34 41 49 / 7%);
@@ -92,7 +97,7 @@
   cursor: not-allowed;
 }
 
-/* Existing navigation and page structure, in WeshBoard's neutral/orange palette. */
+/* Existing navigation and page structure, with logo-inspired red/orange accents. */
 .log-design .sidebar {
   background: #1a1a1a;
   color: #b9bbc0;
@@ -102,7 +107,7 @@
   box-shadow: none;
 }
 .log-design .brand-dot {
-  color: #f18a5f;
+  color: var(--ws-accent);
 }
 .log-design .brand small {
   color: #b9bbc0;
@@ -139,8 +144,8 @@
   color: #fff;
 }
 .log-design .nav-item.active {
-  background: #3d291f;
-  color: #ffb38e;
+  background: #381b23;
+  color: #ffabbb;
   box-shadow: inset 3px 0 var(--ws-primary);
 }
 .log-design .nav-count {
@@ -151,7 +156,7 @@
   color: #b9bbc0;
 }
 .log-design .sidebar-help:hover {
-  color: #ffb38e;
+  color: #ffabbb;
 }
 .log-design .sidebar-signature {
   border-color: #393939;
@@ -194,7 +199,7 @@
   letter-spacing: -0.5px;
 }
 .log-design .eyebrow {
-  color: var(--ws-primary-text);
+  color: var(--ws-accent-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -210,12 +215,12 @@
   color: var(--ws-secondary);
 }
 .log-design :is(.connection-indicator, .connection-indicator.connected) {
-  color: var(--ws-primary-text);
+  color: var(--ws-accent-text);
   font-size: 13px;
   font-weight: 600;
 }
 .log-design :is(.connection-indicator i, .connection-indicator.connected i) {
-  background: var(--ws-primary);
+  background: var(--ws-accent);
   box-shadow: none;
 }
 .log-design .connection-indicator.offline {
@@ -225,15 +230,15 @@
   background: var(--ws-danger);
 }
 .log-design .connection-banner {
-  background: var(--ws-primary-pale);
-  border-color: var(--ws-primary-border);
+  background: var(--ws-accent-pale);
+  border-color: var(--ws-accent-border);
   border-radius: var(--ws-radius);
   padding: 16px 18px;
   margin-bottom: 20px;
 }
 .log-design .banner-icon {
-  background: var(--ws-primary-soft);
-  color: var(--ws-primary-text);
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
   width: 40px;
   height: 40px;
 }
@@ -248,7 +253,7 @@
   line-height: 1.6;
 }
 .log-design .connection-banner button {
-  color: var(--ws-primary-text);
+  color: var(--ws-accent-text);
   min-height: var(--ws-control-height);
   font-weight: 650;
   font-size: 14px;
@@ -261,7 +266,7 @@
   color: var(--ws-danger);
 }
 .log-design .connection-banner.offline .banner-icon {
-  background: #f7d9d5;
+  background: var(--ws-danger-border);
 }
 
 /* Master panel hierarchy, comparison selection, and consistent form geometry. */
@@ -290,8 +295,8 @@
   box-sizing: content-box;
   padding: 8px;
   border-radius: 7px;
-  background: var(--ws-primary-soft);
-  color: var(--ws-primary-text);
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
 }
 .log-design .button {
   height: var(--ws-control-height);
@@ -515,7 +520,7 @@
   justify-content: flex-end;
 }
 
-/* WeshBoard comparison popup: trigger width, bounded scrolling, orange selection.
+/* WeshBoard comparison popup: trigger width, bounded scrolling, red selection.
    Popover is in the top layer, so panel clipping and modal dialogs do not hide it. */
 .log-design .select-field {
   min-width: 0;
@@ -654,15 +659,15 @@
   text-align: center;
 }
 .log-design :is(.code-symbol, .empty-illustration) {
-  background: var(--ws-primary-pale);
-  color: var(--ws-primary-text);
-  border-color: var(--ws-primary-border);
+  background: var(--ws-accent-pale);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
   border-radius: 12px;
   box-shadow: none;
 }
 .log-design .empty-illustration > span {
-  color: var(--ws-primary-text);
-  border-color: var(--ws-primary-border);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
 }
 .log-design :is(.detail-empty h3, .results-empty h3) {
   color: var(--ws-text);
@@ -803,7 +808,7 @@
   color: var(--ws-muted);
 }
 .log-design .log-table tr:hover td {
-  background: #e258220a;
+  background: #ea002c0a;
 }
 .log-design .selected-row {
   box-shadow: inset 3px 0 var(--ws-primary);

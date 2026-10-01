@@ -8,11 +8,11 @@ from app.main import app
 client = TestClient(app)
 
 
-def search_body():
+def search_body(program="acell"):
     now = datetime.now(timezone.utc)
-    return {"time_range": {"start": (now - timedelta(hours=1)).isoformat(),
+    return {"program": program, "time_range": {"start": (now - timedelta(hours=1)).isoformat(),
                            "end": now.isoformat()},
-            "filters": {"global_transaction_id": ["condition-only"]}}
+            "filters": {"global_transaction_id" if program == "acell" else "transaction_key": ["condition-only"]}}
 
 
 def test_no_fake_logs_or_options():
@@ -31,39 +31,59 @@ def test_no_fake_export_jobs():
     assert client.get("/api/exports/not-created").status_code == 503
 
 
-def test_all_systems_requires_id():
-    body = search_body()
+@pytest.mark.parametrize("program", ["acell", "arc"])
+def test_all_systems_requires_program_transaction_id(program):
+    body = search_body(program)
     body["filters"] = {}
     assert client.post("/api/logs/search", json=body).status_code == 422
     body["filters"] = {"systems": ["selected-system"]}
     assert client.post("/api/logs/search", json=body).status_code == 503
 
 
-def test_transaction_key_requires_system_or_global_id():
-    body = search_body()
-    body["filters"] = {"transaction_key": ["condition-only"]}
-    assert client.post("/api/logs/search", json=body).status_code == 422
-    body["filters"]["systems"] = ["selected-system"]
-    assert client.post("/api/logs/search", json=body).status_code == 503
-
-
-def test_lms_accepts_all_search_fields_together():
-    body = search_body()
-    body["filters"].update({
-        "transaction_key": ["key-condition"], "sequence": ["sequence-condition"],
-        "service_transaction_id": ["service-condition"],
-        "event_transaction_id": ["event-condition"],
-        "full_text": "message condition", "log_types": ["type-one", "type-two"],
-    })
+@pytest.mark.parametrize("program, filters", [
+    ("acell", {"service_transaction_id": ["service-condition"],
+               "event_transaction_id": ["event-condition"], "server": ["server-condition"],
+               "global_transaction_sequence": ["sequence-condition"]}),
+    ("arc", {"sequence": ["sequence-condition"], "full_text": "message condition",
+             "log_types": ["type-one", "type-two"]}),
+])
+def test_program_conditions_reach_source_and_export(program, filters):
+    body = search_body(program)
+    body["filters"].update(filters)
+    body["correlate"] = program == "arc"
     assert client.post("/api/logs/search", json=body).status_code == 503
     assert client.post("/api/exports", json={"search": body}).status_code == 503
 
 
-def test_search_contract_has_no_viewer_modes():
+@pytest.mark.parametrize("program, field, value", [
+    ("acell", "transaction_key", ["key-condition"]),
+    ("acell", "sequence", ["sequence-condition"]),
+    ("acell", "full_text", "message condition"),
+    ("arc", "global_transaction_id", ["global-condition"]),
+    ("arc", "global_transaction_sequence", ["sequence-condition"]),
+    ("arc", "service_transaction_id", ["service-condition"]),
+    ("arc", "event_transaction_id", ["event-condition"]),
+    ("arc", "server", ["server-condition"]),
+])
+def test_other_program_fields_are_rejected(program, field, value):
+    body = search_body(program)
+    body["filters"][field] = value
+    assert client.post("/api/logs/search", json=body).status_code == 422
+    assert client.post("/api/exports", json={"search": body}).status_code == 422
+
+
+def test_arc_correlation_is_not_available_in_acell():
+    body = search_body("acell")
+    body["correlate"] = True
+    assert client.post("/api/logs/search", json=body).status_code == 422
+
+
+def test_search_contract_identifies_program():
     schema = client.get("/api/openapi.json").json()
-    assert "profile" not in schema["components"]["schemas"]["SearchRequest"]["properties"]
+    properties = schema["components"]["schemas"]["SearchRequest"]["properties"]
+    assert properties["program"]["enum"] == ["acell", "arc"]
     body = search_body()
-    body["profile"] = "arc"
+    body["program"] = "unknown"
     assert client.post("/api/logs/search", json=body).status_code == 422
 
 

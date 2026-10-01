@@ -1,4 +1,5 @@
-import type { Conditions, Fields, SearchRequest } from '../types';
+import type { Conditions, Fields, Program, SearchRequest } from '../types';
+import { isProgram, programFromLocation, programs } from './programs';
 
 export const emptyFields: Fields = {
   fab: '',
@@ -51,13 +52,16 @@ export function presetRange(preset: string) {
   };
 }
 
-export function initialConditions(): Conditions {
-  const params = new URLSearchParams(window.location.hash.slice(1));
+export function initialConditions(program: Program, useLocation = true): Conditions {
+  const params = new URLSearchParams(
+    useLocation && programFromLocation() === program ? window.location.hash.slice(1) : '',
+  );
   const fields = { ...emptyFields };
   fields.global_transaction_id = params.get('g') ?? '';
   fields.transaction_key = params.get('key') ?? '';
   fields.systems = params.get('system') ?? '';
   return {
+    program,
     fields,
     preset: '15m',
     ...presetRange('15m'),
@@ -98,9 +102,11 @@ export function toRequest(conditions: Conditions): SearchRequest {
   if (+start >= +end) throw new Error('시작 시간은 종료 시간보다 빨라야 합니다.');
   if (+start < now - 7 * 86400000) throw new Error('최근 7일 이내의 로그만 조회할 수 있습니다.');
   if (+end > now + 5000) throw new Error('미래 시간은 조회할 수 없습니다.');
-  const fields = conditions.fields;
-  if (!fields.systems.trim() && !fields.global_transaction_id.trim())
-    throw new Error('System 전체 검색에는 G 트랜잭션 ID가 필요합니다.');
+  const config = programs[conditions.program];
+  const fields = { ...emptyFields };
+  for (const key of config.fields) fields[key] = conditions.fields[key];
+  if (!fields.systems.trim() && !fields[config.transactionField].trim())
+    throw new Error(`System 전체 검색에는 ${config.transactionLabel}가 필요합니다.`);
   const filters = Object.fromEntries(
     Object.entries(fields).map(([key, value]) => [
       key,
@@ -112,9 +118,10 @@ export function toRequest(conditions: Conditions): SearchRequest {
     ]),
   ) as SearchRequest['filters'];
   return {
+    program: conditions.program,
     time_range: { start: start.toISOString(), end: end.toISOString() },
     filters,
-    correlate: conditions.correlate,
+    correlate: conditions.program === 'arc' && conditions.correlate,
     page_size: conditions.pageSize,
     cursor: null,
   };
@@ -124,6 +131,7 @@ export function isConditions(value: unknown): value is Conditions {
   if (!value || typeof value !== 'object') return false;
   const c = value as Conditions;
   return (
+    (c.program === undefined || isProgram(c.program)) &&
     timePresets.some(([key]) => key === c.preset) &&
     typeof c.start === 'string' &&
     typeof c.end === 'string' &&
@@ -135,10 +143,20 @@ export function isConditions(value: unknown): value is Conditions {
 }
 
 export function normalizeConditions(value: Conditions): Conditions {
-  // Preserve saved filters while discarding fields from the former mode selector.
+  // Preserve existing saved input and migrate older saves to their own program.
   const fields = { ...emptyFields };
   for (const key of Object.keys(fields) as (keyof Fields)[]) fields[key] = value.fields[key];
+  const legacy = value as Conditions & { profile?: unknown };
+  const program = isProgram(value.program)
+    ? value.program
+    : isProgram(legacy.profile)
+      ? legacy.profile
+      : !fields.global_transaction_id &&
+          (fields.transaction_key || fields.full_text || fields.sequence)
+        ? 'arc'
+        : 'acell';
   return {
+    program,
     fields,
     preset: value.preset,
     start: value.start,

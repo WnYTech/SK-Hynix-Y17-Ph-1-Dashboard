@@ -55,6 +55,7 @@ class Filters(Contract):
 
 
 class SearchRequest(Contract):
+    program: Literal["acell", "arc"] = "acell"
     time_range: TimeRange
     filters: Filters = Field(default_factory=Filters)
     correlate: bool = False
@@ -63,8 +64,17 @@ class SearchRequest(Contract):
 
     @model_validator(mode="after")
     def require_transaction_for_all_systems(self):
-        if not self.filters.systems and not self.filters.global_transaction_id:
-            raise ValueError("System 전체 검색에는 G 트랜잭션 ID가 필요합니다.")
+        key = self.filters.global_transaction_id if self.program == "acell" else self.filters.transaction_key
+        if not self.filters.systems and not key:
+            label = "G 트랜잭션 ID" if self.program == "acell" else "트랜잭션 키"
+            raise ValueError(f"System 전체 검색에는 {label}가 필요합니다.")
+        unavailable = ({"sequence", "transaction_key", "full_text"} if self.program == "acell"
+                       else {"global_transaction_id", "global_transaction_sequence",
+                             "event_transaction_id", "service_transaction_id", "server"})
+        if any(getattr(self.filters, key) for key in unavailable):
+            raise ValueError("선택한 프로그램에서 지원하지 않는 검색조건입니다.")
+        if self.program == "acell" and self.correlate:
+            raise ValueError("트랜잭션 연관검색 옵션은 ARC LMS에서 사용할 수 있습니다.")
         return self
 
 

@@ -5,6 +5,7 @@ import type {
   DownloadJob,
   LogRecord,
   Metadata,
+  Program,
   SearchRequest,
   SearchResponse,
   SourceStatus,
@@ -12,12 +13,14 @@ import type {
 import { api } from '../lib/api';
 import { formatDate, initialConditions, toRequest } from '../lib/conditions';
 import { transactionIdentity } from '../lib/transactions';
+import { programs } from '../lib/programs';
 import SearchPanel from './SearchPanel';
 import ResultsPanel from './ResultsPanel';
 import DetailPanel from './DetailPanel';
 import Dialog from './Dialog';
 
 interface Props {
+  program: Program;
   initial?: Conditions;
   metadata: Metadata | null;
   status: SourceStatus;
@@ -28,6 +31,7 @@ interface Props {
 }
 
 export default function Workspace({
+  program,
   initial,
   metadata,
   status,
@@ -36,7 +40,9 @@ export default function Workspace({
   onExport,
   onMessage,
 }: Props) {
-  const [conditions, setConditions] = useState<Conditions>(initial ?? initialConditions);
+  const [conditions, setConditions] = useState<Conditions>(
+    () => initial ?? initialConditions(program),
+  );
   const [expanded, setExpanded] = useState(false);
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [search, setSearch] = useState<SearchRequest | null>(null);
@@ -119,7 +125,7 @@ export default function Workspace({
     setExportError('');
     try {
       const job = await api.export(exportSearch, exportFormat);
-      onExport({ ...job, format: exportFormat, createdAt: new Date().toISOString() });
+      onExport({ ...job, program, format: exportFormat, createdAt: new Date().toISOString() });
       setExportOpen(false);
       onMessage('다운로드 작업을 요청했습니다. 다운로드에서 진행 상태를 확인하세요.');
     } catch (err) {
@@ -129,14 +135,13 @@ export default function Workspace({
     }
   };
   const related = (row: LogRecord) => {
-    if (!transactionIdentity(row)) {
-      onMessage('연관검색에 필요한 G 트랜잭션 ID 또는 시스템과 트랜잭션 키가 없습니다.');
+    if (!transactionIdentity(row, program)) {
+      onMessage(`선택한 로그에 ${programs[program].transactionLabel}가 없습니다.`);
       return;
     }
     const params = new URLSearchParams({
-      ...(row.global_transaction_id
-        ? { g: row.global_transaction_id }
-        : { key: row.transaction_key, system: row.system }),
+      program,
+      ...(program === 'acell' ? { g: row.global_transaction_id } : { key: row.transaction_key }),
       ...(search ? { start: search.time_range.start, end: search.time_range.end } : {}),
     });
     window.open(`${window.location.pathname}#${params}`, '_blank', 'noopener,noreferrer');
@@ -165,7 +170,7 @@ export default function Workspace({
           onExport={openExport}
           onExpand={() => setExpanded(!expanded)}
         />
-        <DetailPanel selected={selected} search={search} onMessage={onMessage} />
+        <DetailPanel program={program} selected={selected} search={search} onMessage={onMessage} />
       </div>
       <ResultsPanel
         conditions={conditions}
@@ -173,7 +178,7 @@ export default function Workspace({
         loading={loading}
         status={status}
         selected={selected}
-        selectedTransaction={selected ? transactionIdentity(selected) : ''}
+        selectedTransaction={selected ? transactionIdentity(selected, program) : ''}
         highlighted={highlighted}
         page={page}
         onSelect={(row, value) => {

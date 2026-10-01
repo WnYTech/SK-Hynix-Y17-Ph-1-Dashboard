@@ -1,4 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+const viewer = (page: Page) => page.locator('.program-workspace:visible .viewer-container:visible');
+const openProgram = (page: Page, name: 'M14N Acell LogViewer' | 'ARC LMS') =>
+  page.locator('nav').getByRole('button', { name, exact: true }).click();
 
 test('starts without fabricated logs and distinguishes an unconfigured source', async ({
   page,
@@ -7,13 +11,13 @@ test('starts without fabricated logs and distinguishes an unconfigured source', 
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
   await expect(page.getByText('로그 데이터 소스를 연결해 주세요')).toBeVisible();
-  await expect(page.getByText('로그 탐색을 시작하세요')).toBeVisible();
+  await expect(viewer(page).getByText('로그 탐색을 시작하세요')).toBeVisible();
   await expect(page.locator('.log-table tbody tr')).toHaveCount(0);
-  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('G 트랜잭션 ID가 필요');
-  await page.getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
+  await viewer(page).getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
   const response = page.waitForResponse((response) => response.url().endsWith('/api/logs/search'));
-  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
   expect((await response).status()).toBe(503);
   await expect(page.getByRole('alert')).toContainText('로그 데이터 소스가 연결되지 않았습니다');
   expect(errors).toEqual([]);
@@ -21,81 +25,168 @@ test('starts without fabricated logs and distinguishes an unconfigured source', 
 
 test('checks typed dates before querying', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
-  await page.getByLabel('시작 시간', { exact: true }).fill('2026-02-30 12:00:00');
-  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await viewer(page).getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
+  await viewer(page).getByLabel('시작 시간', { exact: true }).fill('2026-02-30 12:00:00');
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('유효한 날짜');
-  await page.getByLabel('시작 시간', { exact: true }).fill('2000-01-01 00:00:00');
-  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await viewer(page).getByLabel('시작 시간', { exact: true }).fill('2000-01-01 00:00:00');
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('최근 7일');
-  await page.getByLabel('조회 기간 프리셋').selectOption('7d');
-  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await viewer(page).getByLabel('조회 기간 프리셋').selectOption('7d');
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('데이터 소스가 연결되지 않았습니다');
 });
 
-test('LMS exposes all conditions, columns and detail tabs in one viewer', async ({ page }) => {
+test('sidebar separates program fields, columns, detail tabs and request payloads', async ({
+  page,
+}) => {
   await page.goto('/');
-  await expect(page).toHaveTitle('Y17 · LMS');
-  await expect(page.getByRole('button', { name: /Acell|ARC/ })).toHaveCount(0);
-  await page.getByRole('button', { name: '상세 검색조건' }).click();
-  await expect(page.getByLabel('Full Text')).toBeVisible();
-  await expect(page.getByLabel('G 트랜잭션 ID', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('트랜잭션 키', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('SEQ', { exact: true })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: '트랜잭션 키', exact: true })).toBeVisible();
-  await expect(page.getByRole('tab', { name: '트랜잭션 전체 로그' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'G 트랜잭션', exact: true })).toBeVisible();
-  await expect(page.getByLabel('E 트랜잭션 ID')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'S 트랜잭션' })).toBeVisible();
-  await page.getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
-  await page.getByLabel('트랜잭션 키', { exact: true }).fill('key-condition');
-  await page.getByLabel('S 트랜잭션 ID', { exact: true }).fill('service-condition');
-  await page.getByLabel('Full Text').fill('message condition');
-  const request = page.waitForRequest((request) => request.url().endsWith('/api/logs/search'));
-  await page.getByRole('button', { name: '검색', exact: true }).click();
-  const body = (await request).postDataJSON();
-  expect(body).not.toHaveProperty('profile');
-  expect(body.filters.transaction_key).toEqual(['key-condition']);
-  expect(body.filters.service_transaction_id).toEqual(['service-condition']);
-  expect(body.filters.full_text).toBe('message condition');
+  await expect(page).toHaveTitle('M14N Acell LogViewer · Y17');
+  await viewer(page).getByRole('button', { name: '상세 검색조건' }).click();
+  await expect(viewer(page).getByLabel('Full Text')).toHaveCount(0);
+  await expect(viewer(page).getByLabel('트랜잭션 키', { exact: true })).toHaveCount(0);
+  await expect(viewer(page).getByLabel('서버', { exact: true })).toBeVisible();
+  await expect(viewer(page).getByRole('combobox', { name: '로그 종류' })).toBeVisible();
+  await expect(
+    viewer(page).getByRole('columnheader', { name: 'G 트랜잭션', exact: true }),
+  ).toBeVisible();
+  await expect(
+    viewer(page).getByRole('columnheader', { name: '소요 (ms)', exact: true }),
+  ).toBeVisible();
+  for (const name of ['단일 로그', 'S 트랜잭션', 'E 트랜잭션', 'G 트랜잭션']) {
+    await expect(viewer(page).getByRole('tab', { name, exact: true })).toBeVisible();
+  }
+  await viewer(page).getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
+  await viewer(page).getByLabel('S 트랜잭션 ID', { exact: true }).fill('service-condition');
+  const acellRequest = page.waitForRequest((request) => request.url().endsWith('/api/logs/search'));
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
+  const acellBody = (await acellRequest).postDataJSON();
+  expect(acellBody.program).toBe('acell');
+  expect(acellBody.filters.service_transaction_id).toEqual(['service-condition']);
+  expect(acellBody.filters.transaction_key).toEqual([]);
+  await expect(page.getByRole('alert')).toContainText('데이터 소스가 연결되지 않았습니다');
+
+  await openProgram(page, 'ARC LMS');
+  await expect(page).toHaveTitle('ARC LMS · Y17');
+  await viewer(page).getByRole('button', { name: '상세 검색조건' }).click();
+  await expect(viewer(page).getByLabel('G 트랜잭션 ID', { exact: true })).toHaveCount(0);
+  await expect(viewer(page).getByLabel('서버', { exact: true })).toHaveCount(0);
+  await expect(viewer(page).getByRole('textbox', { name: '로그 종류' })).toBeVisible();
+  await expect(
+    viewer(page).getByRole('columnheader', { name: '트랜잭션 키', exact: true }),
+  ).toBeVisible();
+  await expect(
+    viewer(page).getByRole('columnheader', { name: 'G 트랜잭션', exact: true }),
+  ).toHaveCount(0);
+  await expect(viewer(page).getByRole('tab', { name: '트랜잭션 전체 로그' })).toBeVisible();
+  await expect(viewer(page).getByRole('tab', { name: 'S 트랜잭션' })).toHaveCount(0);
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('트랜잭션 키가 필요');
+  await viewer(page).getByLabel('트랜잭션 키', { exact: true }).fill('key-condition');
+  await viewer(page).getByLabel('Full Text').fill('message condition');
+  await viewer(page).getByLabel('로그 종류').fill('A Q Z');
+  await viewer(page).getByRole('checkbox', { name: '트랜잭션 연관검색' }).check();
+  const response = page.waitForResponse((response) => response.url().endsWith('/api/logs/search'));
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
+  const arcResponse = await response;
+  expect(arcResponse.status()).toBe(503);
+  const arcBody = arcResponse.request().postDataJSON();
+  expect(arcBody.program).toBe('arc');
+  expect(arcBody.filters.transaction_key).toEqual(['key-condition']);
+  expect(arcBody.filters.full_text).toBe('message condition');
+  expect(arcBody.filters.log_types).toEqual(['A', 'Q', 'Z']);
+  expect(arcBody.filters.global_transaction_id).toEqual([]);
+  expect(arcBody.correlate).toBe(true);
+
+  await openProgram(page, 'M14N Acell LogViewer');
+  await expect(viewer(page).getByLabel('G 트랜잭션 ID', { exact: true })).toHaveValue(
+    'condition-only',
+  );
+  await expect(viewer(page).getByLabel('S 트랜잭션 ID', { exact: true })).toHaveValue(
+    'service-condition',
+  );
+  await openProgram(page, 'ARC LMS');
+  await expect(viewer(page).getByLabel('Full Text')).toHaveValue('message condition');
 });
 
-test('saved conditions survive reload and viewers remain independent', async ({ page }) => {
-  await page.goto('/');
-  await page.getByLabel('G 트랜잭션 ID', { exact: true }).fill('saved-condition');
-  await page.getByLabel('트랜잭션 키', { exact: true }).fill('saved-key');
-  await page.getByRole('button', { name: '상세 검색조건' }).click();
-  await page.getByLabel('Full Text').fill('saved-text');
-  await page.getByLabel('조회 기간 프리셋').selectOption('1h');
-  await page.getByRole('button', { name: '조건 저장', exact: true }).click();
-  await page.getByLabel('검색조건 이름').fill('기간 조건');
+test('saved conditions reopen the correct program and viewers remain independent', async ({
+  page,
+}) => {
+  await page.goto('/#program=arc');
+  await viewer(page).getByLabel('트랜잭션 키', { exact: true }).fill('saved-key');
+  await viewer(page).getByRole('button', { name: '상세 검색조건' }).click();
+  await viewer(page).getByLabel('Full Text').fill('saved-text');
+  await viewer(page).getByLabel('조회 기간 프리셋').selectOption('1h');
+  await viewer(page).getByRole('button', { name: '조건 저장', exact: true }).click();
+  await page.getByLabel('검색조건 이름').fill('ARC 기간 조건');
   await page.getByRole('button', { name: '저장', exact: true }).click();
-  // Previously saved mode-specific conditions must reopen in the single LMS.
+  await page.reload();
+  await openProgram(page, 'M14N Acell LogViewer');
+  await viewer(page).getByLabel('G 트랜잭션 ID', { exact: true }).fill('acell-independent');
+  await page.getByRole('button', { name: '저장된 검색조건' }).click();
+  await expect(page.locator('.saved-item')).toContainText('ARC LMS');
+  await page.getByRole('button', { name: '불러오기', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'ARC LMS', exact: false })).toBeVisible();
+  await expect(viewer(page).getByLabel('조회 기간 프리셋')).toHaveValue('1h');
+  await expect(viewer(page).getByLabel('트랜잭션 키', { exact: true })).toHaveValue('saved-key');
+  await viewer(page).getByRole('button', { name: '상세 검색조건' }).click();
+  await expect(viewer(page).getByLabel('Full Text')).toHaveValue('saved-text');
+  await page.getByRole('tab', { name: '조회창 01' }).click();
+  await expect(viewer(page).getByLabel('트랜잭션 키', { exact: true })).toHaveValue('');
+  await page.getByRole('button', { name: '수평으로 나란히 보기' }).click();
+  await expect(viewer(page)).toHaveCount(2);
+  await openProgram(page, 'M14N Acell LogViewer');
+  await expect(viewer(page)).toHaveCount(1);
+  await expect(viewer(page).getByLabel('G 트랜잭션 ID', { exact: true })).toHaveValue(
+    'acell-independent',
+  );
+  await openProgram(page, 'ARC LMS');
+  await expect(viewer(page)).toHaveCount(2);
+  await page.getByRole('button', { name: '조회창 02 닫기' }).click();
+  await expect(viewer(page)).toHaveCount(1);
+});
+
+test('legacy saved program conditions migrate and hidden fields are omitted from requests', async ({
+  page,
+}) => {
+  await page.goto('/#program=arc');
+  await viewer(page).getByLabel('트랜잭션 키', { exact: true }).fill('legacy-key');
+  await viewer(page).getByRole('button', { name: '조건 저장', exact: true }).click();
+  await page.getByLabel('검색조건 이름').fill('이전 ARC 조건');
+  await page.getByRole('button', { name: '저장', exact: true }).click();
   await page.evaluate(() => {
     const saved = JSON.parse(localStorage.getItem('y17:conditions:v1')!);
+    delete saved[0].conditions.program;
     saved[0].conditions.profile = 'arc';
+    saved[0].conditions.fields.global_transaction_id = 'old-hidden-input';
     localStorage.setItem('y17:conditions:v1', JSON.stringify(saved));
   });
   await page.reload();
   await page.getByRole('button', { name: '저장된 검색조건' }).click();
   await page.getByRole('button', { name: '불러오기', exact: true }).click();
-  const activeViewer = page.locator('.viewer-container:visible');
-  await expect(activeViewer.getByLabel('G 트랜잭션 ID', { exact: true })).toHaveValue(
-    'saved-condition',
+  await expect(viewer(page).getByLabel('트랜잭션 키', { exact: true })).toHaveValue('legacy-key');
+  const response = page.waitForResponse((response) => response.url().endsWith('/api/logs/search'));
+  await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
+  const result = await response;
+  expect(result.status()).toBe(503);
+  expect(result.request().postDataJSON().filters.global_transaction_id).toEqual([]);
+});
+
+test('program links and a new window retain the selected program', async ({ page, context }) => {
+  await page.goto('/#program=arc&key=linked-condition');
+  await expect(viewer(page).getByLabel('트랜잭션 키', { exact: true })).toHaveValue(
+    'linked-condition',
   );
-  await expect(activeViewer.getByLabel('조회 기간 프리셋')).toHaveValue('1h');
-  await expect(activeViewer.getByLabel('트랜잭션 키', { exact: true })).toHaveValue('saved-key');
-  await activeViewer.getByRole('button', { name: '상세 검색조건' }).click();
-  await expect(activeViewer.getByLabel('Full Text')).toHaveValue('saved-text');
-  await expect(page.getByRole('button', { name: /Acell|ARC/ })).toHaveCount(0);
-  await page.getByRole('tab', { name: '조회창 01' }).click();
-  await expect(
-    page.locator('.viewer-container:visible').getByLabel('G 트랜잭션 ID', { exact: true }),
-  ).toHaveValue('');
-  await page.getByRole('button', { name: '수평으로 나란히 보기' }).click();
-  await expect(page.locator('.viewer-container:visible')).toHaveCount(2);
-  await page.getByRole('button', { name: '조회창 02 닫기' }).click();
-  await expect(page.locator('.viewer-container:visible')).toHaveCount(1);
+  const newPage = context.waitForEvent('page');
+  await page.getByRole('button', { name: '새 창 열기' }).click();
+  const opened = await newPage;
+  await expect(opened).toHaveTitle('ARC LMS · Y17');
+  await expect(viewer(opened).getByLabel('트랜잭션 키', { exact: true })).toHaveValue('');
+  await opened.close();
+  await page.goto('/#program=acell&g=linked-global');
+  await expect(viewer(page).getByLabel('G 트랜잭션 ID', { exact: true })).toHaveValue(
+    'linked-global',
+  );
 });
 
 test('download stays unavailable without a real source and never creates a fake file', async ({
@@ -103,11 +194,8 @@ test('download stays unavailable without a real source and never creates a fake 
 }) => {
   await page.goto('/');
   await page.getByText('로그 데이터 소스를 연결해 주세요').waitFor();
-  await page.getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
-  await page
-    .locator('.search-panel')
-    .getByRole('button', { name: '다운로드', exact: true })
-    .click();
+  await viewer(page).getByLabel('G 트랜잭션 ID', { exact: true }).fill('condition-only');
+  await viewer(page).getByRole('button', { name: '다운로드', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText('아직 생성된 파일은 없습니다.', { exact: false })).toBeVisible();
   await dialog.getByLabel('Excel', { exact: false }).check();
@@ -127,14 +215,34 @@ test('API failure has its own state', async ({ page }) => {
   await expect(page.getByText('연결 안 됨', { exact: true })).toBeVisible();
 });
 
-test('desktop and narrow layouts remain usable', async ({ page }) => {
+test('larger typography stays readable on desktop and narrow layouts', async ({ page }) => {
   await page.goto('/');
   await page.getByText('로그 데이터 소스를 연결해 주세요').waitFor();
-  await page.screenshot({ path: 'test-results/lms-desktop.png', fullPage: true });
-  await page.getByRole('button', { name: '상세 검색조건' }).click();
-  await page.screenshot({ path: 'test-results/lms-expanded.png', fullPage: true });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole('button', { name: '검색', exact: true })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  await page.screenshot({ path: 'test-results/mobile.png', fullPage: true });
+  for (const name of ['M14N Acell LogViewer', 'ARC LMS'] as const) {
+    await openProgram(page, name);
+    const program = name === 'ARC LMS' ? 'arc' : 'acell';
+    await viewer(page).getByRole('button', { name: '상세 검색조건' }).click();
+    for (const selector of [
+      '.field > span',
+      '.field input',
+      '.detail-tabs button',
+      '.log-table th',
+      '.button',
+    ]) {
+      const sizes = await viewer(page)
+        .locator(selector)
+        .evaluateAll((elements) =>
+          elements.map((element) => parseFloat(getComputedStyle(element).fontSize)),
+        );
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(14);
+    }
+    await page.screenshot({ path: `test-results/${program}-desktop.png`, fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(viewer(page).getByRole('button', { name: '검색', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
+    await page.screenshot({ path: `test-results/${program}-mobile.png`, fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  }
 });

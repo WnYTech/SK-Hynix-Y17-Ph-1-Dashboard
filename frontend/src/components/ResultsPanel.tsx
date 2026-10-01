@@ -12,6 +12,7 @@ import { useState } from 'react';
 import type { Conditions, LogRecord, SearchResponse, SourceStatus } from '../types';
 import { formatDate } from '../lib/conditions';
 import { transactionIdentity } from '../lib/transactions';
+import { programs } from '../lib/programs';
 
 type Column = { key: keyof LogRecord; label: string; width: number };
 const columns: Column[] = [
@@ -70,16 +71,22 @@ export default function ResultsPanel({
   const [collapsed, setCollapsed] = useState(false);
   const [find, setFind] = useState('');
   const [context, setContext] = useState<{ row: LogRecord; x: number; y: number } | null>(null);
+  const visibleColumns = programs[conditions.program].columns.map((key) =>
+    columns.find((column) => column.key === key)!,
+  );
   const rows = result?.items ?? [];
   const matches = find
     ? rows.filter((row) =>
-        Object.values(row).some((v) => String(v).toLowerCase().includes(find.toLowerCase())),
+        visibleColumns.some(({ key }) => {
+          const value = key === 'datetime' ? formatDate(row.datetime) : String(row[key] ?? '');
+          return value.toLowerCase().includes(find.toLowerCase());
+        }),
       ).length
     : 0;
   const copy = async (row: LogRecord) => {
     try {
       await navigator.clipboard.writeText(
-        columns.map((column) => row[column.key] ?? '').join('\t'),
+        visibleColumns.map((column) => row[column.key] ?? '').join('\t'),
       );
       onMessage('선택한 행을 복사했습니다.');
     } catch {
@@ -143,8 +150,8 @@ export default function ResultsPanel({
               <thead>
                 <tr>
                   <th className="number-column">No</th>
-                  {columns.map((column) => (
-                    <th key={column.key} style={{ minWidth: column.width }}>
+                  {visibleColumns.map((column) => (
+                    <th key={column.key} style={{ minWidth: Math.round(column.width * 1.2) }}>
                       {column.label}
                     </th>
                   ))}
@@ -152,7 +159,7 @@ export default function ResultsPanel({
               </thead>
               <tbody>
                 {rows.map((row, i) => {
-                  const transaction = transactionIdentity(row);
+                  const transaction = transactionIdentity(row, conditions.program);
                   return (
                     <tr
                       key={row.id}
@@ -172,7 +179,7 @@ export default function ResultsPanel({
                           {(page - 1) * conditions.pageSize + i + 1}
                         </button>
                       </td>
-                      {columns.map((column) => {
+                      {visibleColumns.map((column) => {
                         const value =
                           column.key === 'datetime'
                             ? formatDate(row.datetime)

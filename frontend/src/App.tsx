@@ -7,17 +7,13 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
-  Columns2,
   Database,
   ExternalLink,
   FileSearch,
   FolderOpen,
   Layers3,
-  LayoutGrid,
   PanelTop,
-  Plus,
   RefreshCw,
-  Rows2,
   Search,
   Settings2,
   Terminal,
@@ -27,25 +23,22 @@ import {
 import type {
   Conditions,
   DownloadJob,
-  Layout,
   Metadata,
   Page,
+  Program,
   SavedCondition,
   SourceStatus,
 } from './types';
 import { api } from './lib/api';
-import { formatDate } from './lib/conditions';
+import { formatDate, initialConditions } from './lib/conditions';
 import { readSaved, writeSaved } from './lib/storage';
-import Workspace from './components/Workspace';
+import ProgramWorkspace, { type LoadRequest } from './components/ProgramWorkspace';
+import { isProgram, programFromLocation, programKeys, programs } from './lib/programs';
 import Dialog from './components/Dialog';
 
-interface Viewer {
-  id: string;
-  name: string;
-  initial?: Conditions;
-}
 const labels: Record<Page, string> = {
-  logs: '로그 탐색',
+  acell: programs.acell.title,
+  arc: programs.arc.title,
   downloads: '다운로드',
   saved: '저장된 검색조건',
   connection: '연결 상태',
@@ -58,12 +51,11 @@ const statuses: Record<SourceStatus, string> = {
 };
 
 export default function App() {
-  const [page, setPage] = useState<Page>('logs');
+  const [page, setPage] = useState<Page>(programFromLocation);
+  const [lastProgram, setLastProgram] = useState<Program>(programFromLocation);
+  const [loadRequest, setLoadRequest] = useState<LoadRequest | null>(null);
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [status, setStatus] = useState<SourceStatus>('checking');
-  const [viewers, setViewers] = useState<Viewer[]>([{ id: 'main', name: '조회창 01' }]);
-  const [active, setActive] = useState('main');
-  const [layout, setLayout] = useState<Layout>('tabs');
   const [saved, setSaved] = useState<SavedCondition[]>(readSaved);
   const [saveConditions, setSaveConditions] = useState<Conditions | null>(null);
   const [saveName, setSaveName] = useState('');
@@ -72,7 +64,33 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [help, setHelp] = useState(false);
   const [refreshingJobs, setRefreshingJobs] = useState(false);
-  const [nextViewer, setNextViewer] = useState(2);
+  const navigate = (next: Page) => {
+    setPage(next);
+    if (isProgram(next)) {
+      setLastProgram(next);
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#program=${next}`,
+      );
+    }
+  };
+  useEffect(() => {
+    document.title = `${labels[page]} · Y17`;
+  }, [page]);
+  useEffect(() => {
+    const openLocation = () => {
+      const program = programFromLocation();
+      setPage(program);
+      setLastProgram(program);
+      const params = new URLSearchParams(window.location.hash.slice(1));
+      if (['g', 'key', 'system', 'start', 'end'].some((key) => params.has(key))) {
+        setLoadRequest({ id: crypto.randomUUID(), conditions: initialConditions(program) });
+      }
+    };
+    window.addEventListener('hashchange', openLocation);
+    return () => window.removeEventListener('hashchange', openLocation);
+  }, []);
 
   const refresh = async () => {
     setStatus('checking');
@@ -94,25 +112,6 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const addViewer = (conditions?: Conditions) => {
-    if (viewers.length >= 4) {
-      setNotice('최대 4개의 조회창을 열 수 있습니다.');
-      return;
-    }
-    const id = crypto.randomUUID();
-    setViewers([
-      ...viewers,
-      { id, name: `조회창 ${String(nextViewer).padStart(2, '0')}`, initial: conditions },
-    ]);
-    setNextViewer(nextViewer + 1);
-    setActive(id);
-    setPage('logs');
-  };
-  const closeViewer = (id: string) => {
-    const next = viewers.filter((viewer) => viewer.id !== id);
-    setViewers(next);
-    if (active === id) setActive(next[0].id);
-  };
   const save = () => {
     if (!saveConditions || !saveName.trim()) {
       setSaveError('검색조건 이름을 입력해 주세요.');
@@ -171,7 +170,7 @@ export default function App() {
           href="#"
           onClick={(e) => {
             e.preventDefault();
-            setPage('logs');
+            navigate(lastProgram);
           }}
         >
           <span className="brand-icon">
@@ -179,7 +178,7 @@ export default function App() {
           </span>
           <span>
             Y17<span className="brand-dot">.</span>
-            <small>LMS</small>
+            <small>LOG WORKSPACE</small>
           </span>
         </a>
         <div className="project-card">
@@ -196,7 +195,8 @@ export default function App() {
         <nav>
           {(
             [
-              { key: 'logs', icon: FileSearch },
+              { key: 'acell', icon: Activity },
+              { key: 'arc', icon: FileSearch },
               { key: 'downloads', icon: ArrowDownToLine },
               { key: 'saved', icon: Bookmark },
             ] as const
@@ -205,14 +205,24 @@ export default function App() {
               key={key}
               aria-label={labels[key]}
               className={`nav-item ${page === key ? 'active' : ''}`}
-              onClick={() => setPage(key)}
+              onClick={() => navigate(key)}
+              title={labels[key]}
+              aria-current={page === key ? 'page' : undefined}
             >
               <Icon size={18} />
               <span>{labels[key]}</span>
+              {(key === 'acell' || key === 'arc') && (
+                <span className="nav-compact">{key === 'acell' ? 'Acell' : 'ARC'}</span>
+              )}
               {key === 'saved' && saved.length > 0 && (
                 <span className="nav-count">{saved.length}</span>
               )}
-              {page === key && <ChevronRight size={14} className="nav-chevron" />}
+              <ChevronRight
+                size={14}
+                className="nav-chevron"
+                aria-hidden="true"
+                style={{ visibility: page === key ? 'visible' : 'hidden' }}
+              />
             </button>
           ))}
         </nav>
@@ -220,7 +230,7 @@ export default function App() {
         <button
           aria-label="연결 상태"
           className={`nav-item ${page === 'connection' ? 'active' : ''}`}
-          onClick={() => setPage('connection')}
+          onClick={() => navigate('connection')}
         >
           <Settings2 size={18} />
           <span>연결 상태</span>
@@ -278,15 +288,15 @@ export default function App() {
           <div className="page-heading">
             <div>
               <div className="eyebrow">
-                {page === 'logs' ? 'EXPLORE YOUR LOGS' : 'YOUR WORKSPACE'}
+                {isProgram(page) ? 'EXPLORE YOUR LOGS' : 'YOUR WORKSPACE'}
               </div>
               <h1>
                 {labels[page]}
-                {page === 'logs' && <span className="phase-badge">Y17 · Ph-1</span>}
+                {isProgram(page) && <span className="phase-badge">Y17 · Ph-1</span>}
               </h1>
               <p>
-                {page === 'logs'
-                  ? '시스템별 로그를 조회하고, 트랜잭션의 전체 흐름을 확인하세요.'
+                {isProgram(page)
+                  ? programs[page].description
                   : page === 'downloads'
                     ? '기간별 로그 다운로드 작업과 파일을 확인하세요.'
                     : page === 'saved'
@@ -294,18 +304,22 @@ export default function App() {
                       : 'API 서버와 로그 데이터 소스의 연결 상태를 확인하세요.'}
               </p>
             </div>
-            {page === 'logs' && (
+            {isProgram(page) && (
               <button
                 className="button secondary new-window"
                 onClick={() =>
-                  window.open(window.location.pathname, '_blank', 'noopener,noreferrer')
+                  window.open(
+                    `${window.location.pathname}#program=${page}`,
+                    '_blank',
+                    'noopener,noreferrer',
+                  )
                 }
               >
                 <ExternalLink size={15} />새 창 열기
               </button>
             )}
           </div>
-          {page === 'logs' && status !== 'connected' && (
+          {isProgram(page) && status !== 'connected' && (
             <div className={`connection-banner ${status === 'offline' ? 'offline' : ''}`}>
               <span className="banner-icon">
                 <Database size={18} />
@@ -324,98 +338,35 @@ export default function App() {
                     : '검색 화면이 준비되었습니다. 데이터 연결 후 로그 조회와 다운로드를 시작할 수 있습니다.'}
                 </span>
               </div>
-              <button onClick={() => setPage('connection')}>
+              <button onClick={() => navigate('connection')}>
                 연결 상태 확인
                 <ArrowRight size={15} />
               </button>
             </div>
           )}
-          <div style={{ display: page === 'logs' ? undefined : 'none' }}>
-            <div className="viewer-toolbar">
-              <div className="viewer-tabs" role="tablist" aria-label="조회창 목록">
-                {viewers.map((viewer) => (
-                  <div
-                    className={`viewer-tab ${active === viewer.id ? 'active' : ''}`}
-                    key={viewer.id}
-                  >
-                    <button
-                      role="tab"
-                      aria-selected={active === viewer.id}
-                      onClick={() => setActive(viewer.id)}
-                    >
-                      <PanelTop size={15} />
-                      {viewer.name}
-                    </button>
-                    {viewers.length > 1 && (
-                      <button
-                        className="close-tab"
-                        aria-label={`${viewer.name} 닫기`}
-                        onClick={() => closeViewer(viewer.id)}
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  className="add-viewer"
-                  aria-label="조회창 추가"
-                  title="조회창 추가"
-                  disabled={viewers.length >= 4}
-                  onClick={() => addViewer()}
-                >
-                  <Plus size={17} />
-                </button>
-              </div>
-              <div className="layout-controls" aria-label="창 배치">
-                <span>보기</span>
-                {(
-                  [
-                    { value: 'tabs', label: '탭으로 보기', icon: LayoutGrid },
-                    { value: 'horizontal', label: '수평으로 나란히 보기', icon: Columns2 },
-                    { value: 'vertical', label: '수직으로 쌓아 보기', icon: Rows2 },
-                  ] as const
-                ).map(({ value, label, icon: Icon }) => (
-                  <button
-                    key={value}
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={layout === value}
-                    className={layout === value ? 'active' : ''}
-                    onClick={() => setLayout(value)}
-                  >
-                    <Icon size={15} />
-                  </button>
-                ))}
-              </div>
+          {programKeys.map((program) => (
+            <div
+              key={program}
+              className="program-workspace"
+              data-program={program}
+              style={{ display: page === program ? undefined : 'none' }}
+            >
+              <ProgramWorkspace
+                program={program}
+                metadata={metadata}
+                status={status}
+                loadRequest={loadRequest}
+                onSave={(conditions) => {
+                  setSaveConditions(conditions);
+                  setSaveName('');
+                  setSaveError('');
+                }}
+                onLoad={() => navigate('saved')}
+                onExport={(job) => setDownloads((previous) => [...previous, job])}
+                onMessage={setNotice}
+              />
             </div>
-            <div className={`viewers-layout layout-${layout}`}>
-              {viewers.map((viewer) => (
-                <div
-                  key={viewer.id}
-                  className="viewer-container"
-                  style={{
-                    display: layout === 'tabs' && active !== viewer.id ? 'none' : undefined,
-                  }}
-                >
-                  {layout !== 'tabs' && <div className="tiled-viewer-name">{viewer.name}</div>}
-                  <Workspace
-                    initial={viewer.initial}
-                    metadata={metadata}
-                    status={status}
-                    onSave={(conditions) => {
-                      setSaveConditions(conditions);
-                      setSaveName('');
-                      setSaveError('');
-                    }}
-                    onLoad={() => setPage('saved')}
-                    onExport={(job) => setDownloads((previous) => [...previous, job])}
-                    onMessage={setNotice}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
           {page === 'saved' && (
             <section className="panel management-panel">
               <div className="panel-heading">
@@ -435,11 +386,17 @@ export default function App() {
                       </span>
                       <div>
                         <h3>{item.name}</h3>
-                        <p>LMS · {formatDate(item.savedAt).slice(0, 16)}</p>
+                        <p>
+                          {programs[item.conditions.program].title} ·{' '}
+                          {formatDate(item.savedAt).slice(0, 16)}
+                        </p>
                       </div>
                       <button
                         className="button secondary"
-                        onClick={() => addViewer(item.conditions)}
+                        onClick={() => {
+                          setLoadRequest({ id: crypto.randomUUID(), conditions: item.conditions });
+                          navigate(item.conditions.program);
+                        }}
                       >
                         불러오기
                         <ArrowRight size={14} />
@@ -459,7 +416,7 @@ export default function App() {
                   <Bookmark size={34} strokeWidth={1.2} />
                   <h3>저장된 검색조건이 없습니다</h3>
                   <p>로그 탐색에서 조건을 설정한 후 ‘조건 저장’을 눌러 주세요.</p>
-                  <button className="button secondary" onClick={() => setPage('logs')}>
+                  <button className="button secondary" onClick={() => navigate(lastProgram)}>
                     로그 탐색으로 이동
                     <ArrowRight size={14} />
                   </button>
@@ -491,7 +448,7 @@ export default function App() {
                       <ArrowDownToLine size={21} />
                       <div>
                         <h3>
-                          {job.format.toUpperCase()} · {job.id}
+                          {programs[job.program].title} · {job.format.toUpperCase()} · {job.id}
                         </h3>
                         <p>
                           {job.status} · {job.processed_rows.toLocaleString()}행 ·{' '}
@@ -582,7 +539,7 @@ export default function App() {
           <footer className="page-footer">
             <span>
               <span className="footer-dot" />
-              Y17 LMS
+              Y17 Log Workspace
             </span>
             <span>
               시간대 KST (UTC+09:00)<span className="footer-separator">·</span>v0.1.0
@@ -644,7 +601,7 @@ export default function App() {
         </Dialog>
       )}
       {help && (
-        <Dialog title="LMS 사용 가이드" onClose={() => setHelp(false)}>
+        <Dialog title="로그 조회 사용 가이드" onClose={() => setHelp(false)}>
           <div className="dialog-body help-body">
             <div>
               <Search size={20} />
@@ -661,8 +618,8 @@ export default function App() {
               <section>
                 <h3>여러 시스템의 흐름을 확인하세요</h3>
                 <p>
-                  System 전체 조회에는 G 트랜잭션 ID가 필요합니다. 개별 시스템을 선택하면 ID 없이
-                  조회할 수 있습니다.
+                  System 전체 조회 시 Acell은 G 트랜잭션 ID, ARC LMS는 트랜잭션 키가 필요합니다.
+                  개별 시스템을 선택하면 ID 없이 조회할 수 있습니다.
                 </p>
               </section>
             </div>
@@ -671,8 +628,9 @@ export default function App() {
               <section>
                 <h3>로그를 비교하세요</h3>
                 <p>
-                  + 버튼으로 최대 4개의 독립된 조회창을 열고 나란히 배치할 수 있습니다. 화면 내
-                  검색은 해당 창의 현재 페이지에서 작동합니다.
+                  왼쪽 메뉴에서 프로그램을 전환해도 검색조건은 유지됩니다. 프로그램마다 + 버튼으로
+                  최대 4개의 조회창을 열고 나란히 배치할 수 있습니다. 화면 내 검색은 해당 창의 현재
+                  페이지에서 작동합니다.
                 </p>
               </section>
             </div>

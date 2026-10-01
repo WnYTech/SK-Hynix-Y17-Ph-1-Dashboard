@@ -1,4 +1,5 @@
-export type Page = 'logs' | 'downloads' | 'saved' | 'connection';
+export type Program = 'acell' | 'arc';
+export type Page = Program | 'downloads' | 'saved' | 'connection';
 export type Layout = 'tabs' | 'horizontal' | 'vertical';
 export type SourceStatus = 'checking' | 'unconfigured' | 'connected' | 'offline';
 export interface Metadata {
@@ -32,6 +33,7 @@ export interface Fields {
   full_text: string;
 }
 export interface Conditions {
+  program: Program;
   fields: Fields;
   preset: string;
   start: string;
@@ -40,6 +42,7 @@ export interface Conditions {
   pageSize: number;
 }
 export interface SearchRequest {
+  program: Program;
   time_range: { start: string; end: string };
   filters: {
     [K in keyof Fields]: K extends 'fab'
@@ -92,6 +95,7 @@ export interface ExportJob {
   error: string | null;
 }
 export interface DownloadJob extends ExportJob {
+  program: Program;
   format: string;
   createdAt: string;
 }

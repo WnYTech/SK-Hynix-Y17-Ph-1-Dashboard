@@ -6,7 +6,7 @@ SK hynix Y17 Ph-1의 생산 시스템 로그 탐색 웹 애플리케이션. Type
 
 ## 실행
 
-Node.js 22.12 이상과 기존에 설치된 `python3.11`을 사용합니다. 현재 개발 환경에는 필요한 패키지가 설치되어 있으므로 추가 설치 없이 실행합니다. 아래 명령은 저장소 루트에서 실행합니다.
+Node.js 22.12 이상과 기존에 설치된 `python3`(Python 3.10 이상)를 사용합니다. 현재 개발 환경에는 필요한 패키지가 설치되어 있으므로 추가 설치 없이 실행합니다. 아래 명령은 저장소 루트에서 실행합니다.
 
 ```bash
 cd /home/sy_jin/SK-Hynix-Y17-Ph-1-Dashboard
@@ -15,8 +15,10 @@ cd /home/sy_jin/SK-Hynix-Y17-Ph-1-Dashboard
 터미널 1 — FastAPI:
 
 ```bash
-python3.11 -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8017 --reload
+python3 app.py
 ```
+
+루트의 `app.py`가 API 서버를 `127.0.0.1:8017`에서 실행하며, 백엔드 코드 변경 시 자동으로 다시 불러옵니다.
 
 터미널 2 — React:
 
@@ -36,7 +38,7 @@ npm run dev
 
 ```bash
 npm ci
-python3.11 -m pip install -r backend/requirements-dev.txt
+python3 -m pip install -r backend/requirements-dev.txt
 ```
 
 ## 현재 구현
@@ -58,6 +60,7 @@ python3.11 -m pip install -r backend/requirements-dev.txt
 ## 구조
 
 ```text
+app.py             API 서버 실행 진입점
 frontend/src/
   components/      검색 / 결과 / 상세 / 워크스페이스 / 공통 대화상자
   lib/             API 클라이언트 / 검색조건·시간 처리 / 브라우저 저장
@@ -77,7 +80,7 @@ docs/              요구사항 추적, 구조 및 후속 연동 검토
 ```bash
 npm run build
 cd backend
-python3.11 -m pytest -q
+python3 -m pytest -q
 cd ..
 npx playwright install chromium
 npm run test:ui

@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from .models import ExportJob, ExportRequest, Metadata, SearchRequest, SearchResponse
 from .repository import LogRepository, SourceUnavailable, get_repository
 
-app = FastAPI(title="Y17 Log Workspace API", version="0.1.0", docs_url="/api/docs",
+app = FastAPI(title="Y17 LMS API", version="0.1.0", docs_url="/api/docs",
               openapi_url="/api/openapi.json", redoc_url=None)
 Repository = Annotated[LogRepository, Depends(get_repository)]
 

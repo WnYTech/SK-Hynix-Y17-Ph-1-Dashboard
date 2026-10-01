@@ -8,9 +8,10 @@ import {
   Search,
   Table2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { Conditions, LogRecord, SearchResponse, SourceStatus } from '../types';
 import { formatDate } from '../lib/conditions';
+import { transactionIdentity } from '../lib/transactions';
 
 type Column = { key: keyof LogRecord; label: string; width: number };
 const columns: Column[] = [
@@ -69,23 +70,6 @@ export default function ResultsPanel({
   const [collapsed, setCollapsed] = useState(false);
   const [find, setFind] = useState('');
   const [context, setContext] = useState<{ row: LogRecord; x: number; y: number } | null>(null);
-  const visibleColumns = useMemo(
-    () =>
-      columns.filter((column) =>
-        conditions.profile === 'acell'
-          ? !['sequence', 'transaction_key'].includes(column.key)
-          : ![
-              'system',
-              'process',
-              'global_transaction_id',
-              'global_transaction_sequence',
-              'event_transaction_id',
-              'service_transaction_id',
-              'elapsed_ms',
-            ].includes(column.key),
-      ),
-    [conditions.profile],
-  );
   const rows = result?.items ?? [];
   const matches = find
     ? rows.filter((row) =>
@@ -95,7 +79,7 @@ export default function ResultsPanel({
   const copy = async (row: LogRecord) => {
     try {
       await navigator.clipboard.writeText(
-        visibleColumns.map((column) => row[column.key] ?? '').join('\t'),
+        columns.map((column) => row[column.key] ?? '').join('\t'),
       );
       onMessage('선택한 행을 복사했습니다.');
     } catch {
@@ -159,7 +143,7 @@ export default function ResultsPanel({
               <thead>
                 <tr>
                   <th className="number-column">No</th>
-                  {visibleColumns.map((column) => (
+                  {columns.map((column) => (
                     <th key={column.key} style={{ minWidth: column.width }}>
                       {column.label}
                     </th>
@@ -168,10 +152,7 @@ export default function ResultsPanel({
               </thead>
               <tbody>
                 {rows.map((row, i) => {
-                  const transaction =
-                    conditions.profile === 'acell'
-                      ? row.global_transaction_id
-                      : row.transaction_key;
+                  const transaction = transactionIdentity(row);
                   return (
                     <tr
                       key={row.id}
@@ -191,7 +172,7 @@ export default function ResultsPanel({
                           {(page - 1) * conditions.pageSize + i + 1}
                         </button>
                       </td>
-                      {visibleColumns.map((column) => {
+                      {columns.map((column) => {
                         const value =
                           column.key === 'datetime'
                             ? formatDate(row.datetime)

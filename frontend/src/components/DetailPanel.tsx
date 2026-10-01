@@ -9,7 +9,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { LogRecord, Profile, SearchRequest, SearchResponse } from '../types';
+import type { LogRecord, SearchRequest, SearchResponse } from '../types';
 import { api } from '../lib/api';
 import { formatDate } from '../lib/conditions';
 import Dialog from './Dialog';
@@ -36,13 +36,12 @@ function pretty(value: string, mode: string) {
 }
 
 interface Props {
-  profile: Profile;
   selected: LogRecord | null;
   search: SearchRequest | null;
   onMessage: (value: string) => void;
 }
 
-export default function DetailPanel({ profile, selected, search, onMessage }: Props) {
+export default function DetailPanel({ selected, search, onMessage }: Props) {
   const [tab, setTab] = useState('single');
   const [mode, setMode] = useState('raw');
   const [expanded, setExpanded] = useState(false);
@@ -70,22 +69,19 @@ export default function DetailPanel({ profile, selected, search, onMessage }: Pr
       cancelled = true;
     };
   }, [mode, selected]);
-  const tabs =
-    profile === 'acell'
-      ? [
-          ['single', '단일 로그'],
-          ['service_transaction_id', 'S 트랜잭션'],
-          ['event_transaction_id', 'E 트랜잭션'],
-          ['global_transaction_id', 'G 트랜잭션'],
-        ]
-      : [
-          ['single', '단일 로그'],
-          ['transaction_key', '트랜잭션 전체 로그'],
-        ];
+  const tabs = [
+    ['single', '단일 로그'],
+    ['transaction_key', '트랜잭션 전체 로그'],
+    ['service_transaction_id', 'S 트랜잭션'],
+    ['event_transaction_id', 'E 트랜잭션'],
+    ['global_transaction_id', 'G 트랜잭션'],
+  ];
   const currentTab = tabs.some(([key]) => key === tab) ? tab : 'single';
   const transactionId =
     selected && currentTab !== 'single'
-      ? String(selected[currentTab as keyof LogRecord] ?? '')
+      ? currentTab === 'transaction_key'
+        ? selected.transaction_key || selected.global_transaction_id
+        : String(selected[currentTab as keyof LogRecord] ?? '')
       : '';
   useEffect(() => {
     setRelated(null);
@@ -104,10 +100,11 @@ export default function DetailPanel({ profile, selected, search, onMessage }: Pr
       else if (key === 'full_text') filters.full_text = '';
       else filters[key] = [];
     }
-    if (profile === 'arc') filters.transaction_key = [selected.transaction_key];
-    else if (selected.global_transaction_id)
+    if (selected.global_transaction_id)
       filters.global_transaction_id = [selected.global_transaction_id];
     else filters.systems = [selected.system];
+    if (currentTab === 'transaction_key' && selected.transaction_key)
+      filters.transaction_key = [selected.transaction_key];
     if (currentTab === 'service_transaction_id') filters.service_transaction_id = [transactionId];
     if (currentTab === 'event_transaction_id') filters.event_transaction_id = [transactionId];
     setBusy(true);
@@ -128,7 +125,7 @@ export default function DetailPanel({ profile, selected, search, onMessage }: Pr
         if (!controller.signal.aborted) setBusy(false);
       });
     return () => controller.abort();
-  }, [selected, search, currentTab, transactionId, profile, cursor]);
+  }, [selected, search, currentTab, transactionId, cursor]);
   let message = selected?.message ?? '';
   let formatError = '';
   if (mode === 'sql' && sqlResult.input === message) {

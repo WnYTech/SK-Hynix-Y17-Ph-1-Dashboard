@@ -9,6 +9,7 @@ import {
   Search,
   SlidersHorizontal,
 } from 'lucide-react';
+import { useId } from 'react';
 import type { Conditions, Fields, Metadata } from '../types';
 import { emptyFields, presetRange, timePresets } from '../lib/conditions';
 
@@ -37,15 +38,14 @@ export default function SearchPanel({
   onExport,
   onExpand,
 }: Props) {
+  const logTypeOptionsId = useId();
   const field = (key: keyof Fields, value: string) =>
     onChange({ ...c, fields: { ...c.fields, [key]: value } });
   const input = (key: keyof Fields, label: string, placeholder = '값 입력', wide = false) => (
     <label className={`field ${wide ? 'field-wide' : ''}`} key={key}>
       <span>
         {label}
-        {((key === 'global_transaction_id' && c.profile === 'acell') ||
-          key === 'transaction_key') &&
-          !c.fields.systems && <i className="required-dot" />}
+        {key === 'global_transaction_id' && !c.fields.systems && <i className="required-dot" />}
       </span>
       <input
         value={c.fields[key]}
@@ -75,7 +75,6 @@ export default function SearchPanel({
         <div className="heading-label">
           <SlidersHorizontal size={16} />
           <h2>검색조건</h2>
-          <span className="subtle-tag">{c.profile === 'acell' ? 'Acell' : 'ARC LMS'}</span>
         </div>
         <div className="button-group">
           <button className="text-button" onClick={onLoad}>
@@ -143,50 +142,48 @@ export default function SearchPanel({
           {select('core_biz', 'Core / Biz', metadata?.core_biz)}
         </div>
         <div className="fields-grid transaction-fields">
-          {c.profile === 'acell' ? (
-            <>
-              {input('global_transaction_id', 'G 트랜잭션 ID', '전체 시스템 조회 시 필수', true)}
-              {input('global_transaction_sequence', 'G 트랜잭션 SEQ')}
-              {input('transaction_name', '트랜잭션명')}
-            </>
-          ) : (
-            <>
-              {input('transaction_key', '트랜잭션 키', '전체 시스템 조회 시 필수', true)}
-              {input('sequence', 'SEQ')}
-              {input('transaction_name', '트랜잭션명')}
-            </>
-          )}
+          {input('global_transaction_id', 'G 트랜잭션 ID', '전체 시스템 조회 시 필수', true)}
+          {input('transaction_key', '트랜잭션 키', '트랜잭션 키 입력', true)}
         </div>
         {expanded && (
           <div className="expanded-fields">
             <div className="fields-grid">
-              {c.profile === 'acell' && (
-                <>
-                  {input('event_transaction_id', 'E 트랜잭션 ID')}
-                  {input('service_transaction_id', 'S 트랜잭션 ID')}
-                </>
-              )}
-              {c.profile === 'acell' && input('server', '서버')}
+              {input('transaction_name', '트랜잭션명')}
               {input('class_name', '클래스명')}
-              {c.profile === 'acell'
-                ? select('log_types', '로그 종류', metadata?.log_types)
-                : input('log_types', '로그 종류', '공백으로 여러 값 입력')}
-              {input('any_terms', 'OR 조건', '하나 이상 포함')}
-              {input('all_terms', 'AND 조건', '모두 포함')}
-            </div>
-            {c.profile === 'arc' && (
-              <label className="field full-text">
-                <span>
-                  Full Text <small>MSG 내용 검색</small>
-                </span>
-                <textarea
-                  rows={2}
-                  value={c.fields.full_text}
-                  onChange={(e) => field('full_text', e.target.value)}
-                  placeholder="검색할 메시지 내용을 입력하세요"
+              {input('server', '서버')}
+              {input('sequence', 'SEQ')}
+              {input('global_transaction_sequence', 'G 트랜잭션 SEQ')}
+              {input('event_transaction_id', 'E 트랜잭션 ID')}
+              {input('service_transaction_id', 'S 트랜잭션 ID')}
+              <label className="field">
+                <span>로그 종류</span>
+                <input
+                  list={logTypeOptionsId}
+                  value={c.fields.log_types}
+                  onChange={(e) => field('log_types', e.target.value)}
+                  placeholder="선택 또는 공백으로 입력"
+                  autoComplete="off"
                 />
+                <datalist id={logTypeOptionsId}>
+                  {metadata?.log_types.map((value) => (
+                    <option key={value} value={value} />
+                  ))}
+                </datalist>
               </label>
-            )}
+              {input('any_terms', 'OR 조건', '하나 이상 포함', true)}
+              {input('all_terms', 'AND 조건', '모두 포함', true)}
+            </div>
+            <label className="field full-text">
+              <span>
+                Full Text <small>MSG 내용 검색</small>
+              </span>
+              <textarea
+                rows={2}
+                value={c.fields.full_text}
+                onChange={(e) => field('full_text', e.target.value)}
+                placeholder="검색할 메시지 내용을 입력하세요"
+              />
+            </label>
             <p className="field-hint">
               <Info size={13} />
               입력값은 공백으로 구분하며 OR로 검색합니다. AND 조건은 모든 단어를 포함합니다.

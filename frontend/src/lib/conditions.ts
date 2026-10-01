@@ -56,8 +56,8 @@ export function initialConditions(): Conditions {
   const fields = { ...emptyFields };
   fields.global_transaction_id = params.get('g') ?? '';
   fields.transaction_key = params.get('key') ?? '';
+  fields.systems = params.get('system') ?? '';
   return {
-    profile: params.get('profile') === 'arc' ? 'arc' : 'acell',
     fields,
     preset: '15m',
     ...presetRange('15m'),
@@ -99,12 +99,8 @@ export function toRequest(conditions: Conditions): SearchRequest {
   if (+start < now - 7 * 86400000) throw new Error('최근 7일 이내의 로그만 조회할 수 있습니다.');
   if (+end > now + 5000) throw new Error('미래 시간은 조회할 수 없습니다.');
   const fields = conditions.fields;
-  const transaction =
-    conditions.profile === 'acell' ? fields.global_transaction_id : fields.transaction_key;
-  if (!fields.systems.trim() && !transaction.trim())
-    throw new Error(
-      `System 전체 검색에는 ${conditions.profile === 'acell' ? 'G 트랜잭션 ID' : '트랜잭션 키'}가 필요합니다.`,
-    );
+  if (!fields.systems.trim() && !fields.global_transaction_id.trim())
+    throw new Error('System 전체 검색에는 G 트랜잭션 ID가 필요합니다.');
   const filters = Object.fromEntries(
     Object.entries(fields).map(([key, value]) => [
       key,
@@ -116,7 +112,6 @@ export function toRequest(conditions: Conditions): SearchRequest {
     ]),
   ) as SearchRequest['filters'];
   return {
-    profile: conditions.profile,
     time_range: { start: start.toISOString(), end: end.toISOString() },
     filters,
     correlate: conditions.correlate,
@@ -129,7 +124,6 @@ export function isConditions(value: unknown): value is Conditions {
   if (!value || typeof value !== 'object') return false;
   const c = value as Conditions;
   return (
-    ['acell', 'arc'].includes(c.profile) &&
     timePresets.some(([key]) => key === c.preset) &&
     typeof c.start === 'string' &&
     typeof c.end === 'string' &&
@@ -138,4 +132,18 @@ export function isConditions(value: unknown): value is Conditions {
     !!c.fields &&
     Object.keys(emptyFields).every((key) => typeof c.fields[key as keyof Fields] === 'string')
   );
+}
+
+export function normalizeConditions(value: Conditions): Conditions {
+  // Preserve saved filters while discarding fields from the former mode selector.
+  const fields = { ...emptyFields };
+  for (const key of Object.keys(fields) as (keyof Fields)[]) fields[key] = value.fields[key];
+  return {
+    fields,
+    preset: value.preset,
+    start: value.start,
+    end: value.end,
+    correlate: value.correlate,
+    pageSize: value.pageSize,
+  };
 }

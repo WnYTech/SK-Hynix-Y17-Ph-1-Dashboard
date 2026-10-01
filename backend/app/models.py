@@ -55,7 +55,6 @@ class Filters(Contract):
 
 
 class SearchRequest(Contract):
-    profile: Literal["acell", "arc"] = "acell"
     time_range: TimeRange
     filters: Filters = Field(default_factory=Filters)
     correlate: bool = False
@@ -64,10 +63,8 @@ class SearchRequest(Contract):
 
     @model_validator(mode="after")
     def require_transaction_for_all_systems(self):
-        key = (self.filters.global_transaction_id if self.profile == "acell"
-               else self.filters.transaction_key)
-        if not self.filters.systems and not key:
-            raise ValueError("System 전체 검색에는 트랜잭션 ID가 필요합니다.")
+        if not self.filters.systems and not self.filters.global_transaction_id:
+            raise ValueError("System 전체 검색에는 G 트랜잭션 ID가 필요합니다.")
         return self
 
 

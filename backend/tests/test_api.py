@@ -39,12 +39,32 @@ def test_all_systems_requires_id():
     assert client.post("/api/logs/search", json=body).status_code == 503
 
 
-def test_arc_requires_its_transaction_key():
+def test_transaction_key_requires_system_or_global_id():
+    body = search_body()
+    body["filters"] = {"transaction_key": ["condition-only"]}
+    assert client.post("/api/logs/search", json=body).status_code == 422
+    body["filters"]["systems"] = ["selected-system"]
+    assert client.post("/api/logs/search", json=body).status_code == 503
+
+
+def test_lms_accepts_all_search_fields_together():
+    body = search_body()
+    body["filters"].update({
+        "transaction_key": ["key-condition"], "sequence": ["sequence-condition"],
+        "service_transaction_id": ["service-condition"],
+        "event_transaction_id": ["event-condition"],
+        "full_text": "message condition", "log_types": ["type-one", "type-two"],
+    })
+    assert client.post("/api/logs/search", json=body).status_code == 503
+    assert client.post("/api/exports", json={"search": body}).status_code == 503
+
+
+def test_search_contract_has_no_viewer_modes():
+    schema = client.get("/api/openapi.json").json()
+    assert "profile" not in schema["components"]["schemas"]["SearchRequest"]["properties"]
     body = search_body()
     body["profile"] = "arc"
     assert client.post("/api/logs/search", json=body).status_code == 422
-    body["filters"] = {"transaction_key": ["condition-only"]}
-    assert client.post("/api/logs/search", json=body).status_code == 503
 
 
 @pytest.mark.parametrize("case", ["old", "future", "reversed", "naive", "page", "blank", "unknown"])

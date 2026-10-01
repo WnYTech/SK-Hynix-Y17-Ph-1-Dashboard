@@ -680,45 +680,8 @@ h1 {
   background: #e7eeed;
   color: #527e76;
 }
-.workspace-profile {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  height: 61px;
-}
-.workspace-profile > span:first-child {
-  font-size: 10px;
-  color: #8b97a5;
-  white-space: nowrap;
-}
-.segmented {
-  display: flex;
-  border: 1px solid #dce3e9;
-  border-radius: 5px;
-  padding: 3px;
-  background: #edf1f4;
-  gap: 2px;
-}
-.segmented button {
-  border: 0;
-  background: none;
-  color: #8692a2;
-  border-radius: 3px;
-  padding: 5px 11px;
-  font-size: 10px;
-  white-space: nowrap;
-}
-.segmented button.active {
-  background: #fff;
-  color: #3a5765;
-  box-shadow: 0 1px 3px #12364e10;
-  font-weight: 600;
-}
-.profile-caption {
-  margin-left: auto;
-  font-size: 10px;
-  color: #8697a6;
-  letter-spacing: 0.1px;
+.workspace {
+  padding-top: 18px;
 }
 .workspace-top {
   display: grid;
@@ -1473,14 +1436,7 @@ h1 {
 .layout-horizontal .range-separator {
   display: none;
 }
-.layout-horizontal .profile-caption,
 .layout-horizontal .table-legend {
-  display: none;
-}
-.layout-horizontal .workspace-profile {
-  gap: 8px;
-}
-.layout-horizontal .workspace-profile > span:first-child {
   display: none;
 }
 .layout-horizontal .table-find input {
@@ -1873,9 +1829,6 @@ h1 {
     flex: initial;
     padding: 0 20px;
   }
-  .profile-caption {
-    font-size: 9px;
-  }
   .table-legend {
     display: none;
   }
@@ -1895,11 +1848,6 @@ h1 {
   }
   .layout-horizontal .subtle-tag {
     display: none;
-  }
-  .layout-horizontal .workspace-profile .segmented button {
-    font-size: 9px;
-    padding-left: 7px;
-    padding-right: 7px;
   }
 }
 @media (max-width: 900px) {
@@ -1946,9 +1894,6 @@ h1 {
   .layout-horizontal {
     grid-template-columns: 1fr !important;
   }
-  .profile-caption {
-    display: none;
-  }
   .connection-banner div > span {
     font-size: 10px;
   }
@@ -1968,9 +1913,6 @@ h1 {
   .viewer-tab > button:first-child {
     padding-left: 8px;
     padding-right: 8px;
-  }
-  .viewers-layout .workspace-profile .segmented button {
-    font-size: 10px;
   }
   .topbar {
     height: 56px;
@@ -2197,13 +2139,6 @@ h1 {
   .management-empty h3 {
     font-size: 13px;
   }
-  .workspace-profile {
-    gap: 9px;
-  }
-  .segmented button {
-    font-size: 9px;
-    padding: 5px 9px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -2269,5 +2204,16 @@ h1 {
   .button.new-window {
     font-size: 0;
     gap: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .detail-tabs {
+    flex-wrap: wrap;
+    height: auto;
+  }
+  .detail-tabs button {
+    min-height: 38px;
+    flex: 1 0 auto;
   }
 }

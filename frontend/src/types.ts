@@ -1,4 +1,3 @@
-export type Profile = 'acell' | 'arc';
 export type Page = 'logs' | 'downloads' | 'saved' | 'connection';
 export type Layout = 'tabs' | 'horizontal' | 'vertical';
 export type SourceStatus = 'checking' | 'unconfigured' | 'connected' | 'offline';
@@ -33,7 +32,6 @@ export interface Fields {
   full_text: string;
 }
 export interface Conditions {
-  profile: Profile;
   fields: Fields;
   preset: string;
   start: string;
@@ -42,7 +40,6 @@ export interface Conditions {
   pageSize: number;
 }
 export interface SearchRequest {
-  profile: Profile;
   time_range: { start: string; end: string };
   filters: {
     [K in keyof Fields]: K extends 'fab'

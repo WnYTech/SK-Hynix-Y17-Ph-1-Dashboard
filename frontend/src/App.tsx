@@ -61,7 +61,7 @@ export default function App() {
   const [page, setPage] = useState<Page>('logs');
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [status, setStatus] = useState<SourceStatus>('checking');
-  const [viewers, setViewers] = useState<Viewer[]>([{ id: 'main', name: 'LogViewer 01' }]);
+  const [viewers, setViewers] = useState<Viewer[]>([{ id: 'main', name: '조회창 01' }]);
   const [active, setActive] = useState('main');
   const [layout, setLayout] = useState<Layout>('tabs');
   const [saved, setSaved] = useState<SavedCondition[]>(readSaved);
@@ -96,13 +96,13 @@ export default function App() {
 
   const addViewer = (conditions?: Conditions) => {
     if (viewers.length >= 4) {
-      setNotice('최대 4개의 LogViewer를 열 수 있습니다.');
+      setNotice('최대 4개의 조회창을 열 수 있습니다.');
       return;
     }
     const id = crypto.randomUUID();
     setViewers([
       ...viewers,
-      { id, name: `LogViewer ${String(nextViewer).padStart(2, '0')}`, initial: conditions },
+      { id, name: `조회창 ${String(nextViewer).padStart(2, '0')}`, initial: conditions },
     ]);
     setNextViewer(nextViewer + 1);
     setActive(id);
@@ -179,7 +179,7 @@ export default function App() {
           </span>
           <span>
             Y17<span className="brand-dot">.</span>
-            <small>LOG WORKSPACE</small>
+            <small>LMS</small>
           </span>
         </a>
         <div className="project-card">
@@ -332,7 +332,7 @@ export default function App() {
           )}
           <div style={{ display: page === 'logs' ? undefined : 'none' }}>
             <div className="viewer-toolbar">
-              <div className="viewer-tabs" role="tablist" aria-label="LogViewer 목록">
+              <div className="viewer-tabs" role="tablist" aria-label="조회창 목록">
                 {viewers.map((viewer) => (
                   <div
                     className={`viewer-tab ${active === viewer.id ? 'active' : ''}`}
@@ -359,8 +359,8 @@ export default function App() {
                 ))}
                 <button
                   className="add-viewer"
-                  aria-label="LogViewer 추가"
-                  title="LogViewer 추가"
+                  aria-label="조회창 추가"
+                  title="조회창 추가"
                   disabled={viewers.length >= 4}
                   onClick={() => addViewer()}
                 >
@@ -435,10 +435,7 @@ export default function App() {
                       </span>
                       <div>
                         <h3>{item.name}</h3>
-                        <p>
-                          {item.conditions.profile === 'acell' ? 'Acell LogViewer' : 'ARC LMS'} ·{' '}
-                          {formatDate(item.savedAt).slice(0, 16)}
-                        </p>
+                        <p>LMS · {formatDate(item.savedAt).slice(0, 16)}</p>
                       </div>
                       <button
                         className="button secondary"
@@ -585,7 +582,7 @@ export default function App() {
           <footer className="page-footer">
             <span>
               <span className="footer-dot" />
-              Y17 Log Workspace
+              Y17 LMS
             </span>
             <span>
               시간대 KST (UTC+09:00)<span className="footer-separator">·</span>v0.1.0
@@ -647,7 +644,7 @@ export default function App() {
         </Dialog>
       )}
       {help && (
-        <Dialog title="Log Workspace 사용 가이드" onClose={() => setHelp(false)}>
+        <Dialog title="LMS 사용 가이드" onClose={() => setHelp(false)}>
           <div className="dialog-body help-body">
             <div>
               <Search size={20} />
@@ -664,8 +661,8 @@ export default function App() {
               <section>
                 <h3>여러 시스템의 흐름을 확인하세요</h3>
                 <p>
-                  System 전체 조회에는 Acell의 G 트랜잭션 ID 또는 ARC의 트랜잭션 키가 필요합니다.
-                  개별 시스템을 선택하면 ID 없이 조회할 수 있습니다.
+                  System 전체 조회에는 G 트랜잭션 ID가 필요합니다. 개별 시스템을 선택하면 ID 없이
+                  조회할 수 있습니다.
                 </p>
               </section>
             </div>
@@ -674,7 +671,7 @@ export default function App() {
               <section>
                 <h3>로그를 비교하세요</h3>
                 <p>
-                  + 버튼으로 최대 4개의 독립된 LogViewer를 열고 나란히 배치할 수 있습니다. 화면 내
+                  + 버튼으로 최대 4개의 독립된 조회창을 열고 나란히 배치할 수 있습니다. 화면 내
                   검색은 해당 창의 현재 페이지에서 작동합니다.
                 </p>
               </section>

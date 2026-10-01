@@ -10,7 +10,8 @@ import type {
   SourceStatus,
 } from '../types';
 import { api } from '../lib/api';
-import { emptyFields, formatDate, initialConditions, toRequest } from '../lib/conditions';
+import { formatDate, initialConditions, toRequest } from '../lib/conditions';
+import { transactionIdentity } from '../lib/transactions';
 import SearchPanel from './SearchPanel';
 import ResultsPanel from './ResultsPanel';
 import DetailPanel from './DetailPanel';
@@ -128,44 +129,20 @@ export default function Workspace({
     }
   };
   const related = (row: LogRecord) => {
-    const id = conditions.profile === 'acell' ? row.global_transaction_id : row.transaction_key;
-    if (!id) {
-      onMessage('선택한 로그에 트랜잭션 ID가 없습니다.');
+    if (!transactionIdentity(row)) {
+      onMessage('연관검색에 필요한 G 트랜잭션 ID 또는 시스템과 트랜잭션 키가 없습니다.');
       return;
     }
     const params = new URLSearchParams({
-      profile: conditions.profile,
-      [conditions.profile === 'acell' ? 'g' : 'key']: id,
+      ...(row.global_transaction_id
+        ? { g: row.global_transaction_id }
+        : { key: row.transaction_key, system: row.system }),
       ...(search ? { start: search.time_range.start, end: search.time_range.end } : {}),
     });
     window.open(`${window.location.pathname}#${params}`, '_blank', 'noopener,noreferrer');
   };
   return (
     <div className="workspace">
-      <div className="workspace-profile">
-        <span>검색 프로필</span>
-        <div className="segmented">
-          <button
-            className={conditions.profile === 'acell' ? 'active' : ''}
-            onClick={() =>
-              conditions.profile !== 'acell' &&
-              changeConditions({ ...conditions, profile: 'acell', fields: { ...emptyFields } })
-            }
-          >
-            Acell LogViewer
-          </button>
-          <button
-            className={conditions.profile === 'arc' ? 'active' : ''}
-            onClick={() =>
-              conditions.profile !== 'arc' &&
-              changeConditions({ ...conditions, profile: 'arc', fields: { ...emptyFields } })
-            }
-          >
-            ARC LMS
-          </button>
-        </div>
-        <span className="profile-caption">시스템 경계를 넘어, 하나의 트랜잭션으로</span>
-      </div>
       {error && (
         <div className="alert error-alert" role="alert">
           <AlertCircle size={16} />
@@ -188,12 +165,7 @@ export default function Workspace({
           onExport={openExport}
           onExpand={() => setExpanded(!expanded)}
         />
-        <DetailPanel
-          profile={conditions.profile}
-          selected={selected}
-          search={search}
-          onMessage={onMessage}
-        />
+        <DetailPanel selected={selected} search={search} onMessage={onMessage} />
       </div>
       <ResultsPanel
         conditions={conditions}
@@ -201,13 +173,7 @@ export default function Workspace({
         loading={loading}
         status={status}
         selected={selected}
-        selectedTransaction={
-          selected
-            ? conditions.profile === 'acell'
-              ? selected.global_transaction_id
-              : selected.transaction_key
-            : ''
-        }
+        selectedTransaction={selected ? transactionIdentity(selected) : ''}
         highlighted={highlighted}
         page={page}
         onSelect={(row, value) => {

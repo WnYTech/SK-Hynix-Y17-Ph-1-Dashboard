@@ -6,18 +6,16 @@ SK hynix Y17 Ph-1의 생산 시스템 로그 탐색 웹 애플리케이션. Type
 
 ## 실행
 
-Node.js 22.12 이상, Python 3.11 이상을 사용합니다.
+Node.js 22.12 이상과 기존에 설치된 `python3.11`을 사용합니다. 현재 개발 환경에는 필요한 패키지가 설치되어 있으므로 추가 설치 없이 실행합니다. 아래 명령은 저장소 루트에서 실행합니다.
 
 ```bash
-npm ci
-python3.11 -m venv .venv
-.venv/bin/python -m pip install -r backend/requirements-dev.txt
+cd /home/sy_jin/SK-Hynix-Y17-Ph-1-Dashboard
 ```
 
 터미널 1 — FastAPI:
 
 ```bash
-.venv/bin/python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8017 --reload
+python3.11 -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8017 --reload
 ```
 
 터미널 2 — React:
@@ -26,11 +24,20 @@ python3.11 -m venv .venv
 npm run dev
 ```
 
+종료는 각 실행 터미널에서 `Ctrl+C`를 누릅니다.
+
 - 화면: http://127.0.0.1:5177
 - API 문서: http://127.0.0.1:8017/api/docs
 - OpenAPI: http://127.0.0.1:8017/api/openapi.json
 
 프런트엔드의 `/api` 요청은 Vite가 FastAPI로 전달합니다. 기존 로컬 서비스와 겹치지 않도록 5177 / 8017 포트를 사용합니다. 별도 ES나 인증정보 없이 프레임을 확인할 수 있습니다.
+
+새 환경에서 의존성을 준비할 때만 다음 명령을 사용합니다. 별도 가상환경은 생성하지 않습니다.
+
+```bash
+npm ci
+python3.11 -m pip install -r backend/requirements-dev.txt
+```
 
 ## 현재 구현
 
@@ -70,7 +77,7 @@ docs/              요구사항 추적, 구조 및 후속 연동 검토
 ```bash
 npm run build
 cd backend
-../.venv/bin/python -m pytest -q
+python3.11 -m pytest -q
 cd ..
 npx playwright install chromium
 npm run test:ui

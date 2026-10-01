@@ -4,6 +4,12 @@ export type Layout = 'tabs' | 'horizontal' | 'vertical';
 export type SourceStatus = 'checking' | 'unconfigured' | 'connected' | 'offline';
 export interface Metadata {
   source_status: 'unconfigured' | 'connected';
+  source_kind: 'none' | 'dummy';
+  total_records: number;
+  generated_at: string | null;
+  earliest_at: string | null;
+  latest_at: string | null;
+  exports_available: boolean;
   fabs: string[];
   systems: string[];
   processes: string[];
@@ -78,6 +84,7 @@ export interface LogRecord {
 export interface SearchResponse {
   items: LogRecord[];
   next_cursor: string | null;
+  current_cursor?: string | null;
   total: number | null;
   took_ms: number;
 }

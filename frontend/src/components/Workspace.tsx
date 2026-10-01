@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, FileDown, Info, X } from 'lucide-react';
+import { AlertCircle, Database, FileDown, Info, Search, X } from 'lucide-react';
 import type {
   Conditions,
   DownloadJob,
@@ -72,11 +72,11 @@ export default function Workspace({
     setSelected(null);
     setHighlighted('');
   };
-  const runSearch = async (nextPage = 1, paginate = false) => {
+  const runSearch = async (nextPage = 1, paginate = false, override?: Conditions) => {
     let body: SearchRequest;
     try {
       body = !paginate
-        ? toRequest(conditions)
+        ? toRequest(override ?? conditions)
         : { ...search!, cursor: nextPage > page ? result!.next_cursor : cursors[nextPage - 1] };
     } catch (err) {
       setError((err as Error).message);
@@ -95,7 +95,7 @@ export default function Workspace({
       setPage(nextPage);
       setCursors((previous) => {
         const next = nextPage === 1 ? [null] : [...previous];
-        next[nextPage - 1] = body.cursor;
+        next[nextPage - 1] = response.current_cursor ?? body.cursor;
         return next;
       });
       setConditions((previous) => ({
@@ -108,6 +108,22 @@ export default function Workspace({
     } finally {
       if (!requestController.signal.aborted) setLoading(false);
     }
+  };
+  const expiredDummy =
+    !!metadata?.latest_at && Date.parse(metadata.latest_at) <= Date.now() - 7 * 86400000;
+  const loadDummy = () => {
+    if (!metadata?.latest_at || expiredDummy) return;
+    const end = Math.min(Date.now(), Date.parse(metadata.latest_at) + 1);
+    const start = Math.max(end - 3600000, Date.now() - 7 * 86400000 + 1000);
+    const next: Conditions = {
+      ...initialConditions(program, false),
+      fields: { ...initialConditions(program, false).fields, systems: 'MES' },
+      preset: 'custom',
+      start: formatDate(new Date(start)),
+      end: formatDate(new Date(end)),
+    };
+    changeConditions(next);
+    void runSearch(1, false, next);
   };
   const openExport = () => {
     setExportError('');
@@ -148,6 +164,31 @@ export default function Workspace({
   };
   return (
     <div className="workspace">
+      {metadata?.source_kind === 'dummy' && (
+        <div className="dummy-source-banner">
+          <Database size={20} aria-hidden="true" />
+          <div>
+            <strong>더미 데이터 · {metadata.total_records.toLocaleString()}건</strong>
+            <span>
+              {expiredDummy
+                ? '생성된 로그의 조회 기간이 만료되었습니다. 더미 데이터를 다시 생성해 주세요.'
+                : 'MES · EAP · FDC · APC 모의 로그입니다. 두 화면에서 같은 데이터를 조회합니다.'}
+            </span>
+            <span>
+              데이터 기간 · {metadata.earliest_at && formatDate(metadata.earliest_at)} ~{' '}
+              {metadata.latest_at && formatDate(metadata.latest_at)} KST
+            </span>
+          </div>
+          <button
+            className="button secondary"
+            disabled={loading || expiredDummy}
+            onClick={loadDummy}
+          >
+            <Search size={16} />
+            더미 로그 조회
+          </button>
+        </div>
+      )}
       {error && (
         <div className="alert error-alert" role="alert">
           <AlertCircle size={16} />
@@ -236,9 +277,11 @@ export default function Workspace({
             <div className="info-note">
               <Info size={16} />
               <span>
-                {status === 'connected'
-                  ? '대용량 로그는 작업으로 요청되며, 완료 후 다운로드할 수 있습니다.'
-                  : '데이터 소스 연결 후 다운로드할 수 있습니다. 아직 생성된 파일은 없습니다.'}
+                {metadata?.source_kind === 'dummy'
+                  ? '더미 로그의 검색과 상세 조회가 가능합니다. 전체 로그 내보내기는 아직 연결되지 않았습니다.'
+                  : status === 'connected'
+                    ? '대용량 로그는 작업으로 요청되며, 완료 후 다운로드할 수 있습니다.'
+                    : '데이터 소스 연결 후 다운로드할 수 있습니다. 아직 생성된 파일은 없습니다.'}
               </span>
             </div>
             {exportError && (
@@ -257,7 +300,9 @@ export default function Workspace({
             </button>
             <button
               className="button primary"
-              disabled={!exportSearch || exporting || status !== 'connected'}
+              disabled={
+                !exportSearch || exporting || status !== 'connected' || !metadata?.exports_available
+              }
               onClick={() => void createExport()}
             >
               {exporting ? '요청 중…' : '다운로드 요청'}

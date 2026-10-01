@@ -4,6 +4,44 @@ const viewer = (page: Page) => page.locator('.program-workspace:visible .viewer-
 const openProgram = (page: Page, name: 'M14N Acell LogViewer' | 'ARC LMS') =>
   page.locator('nav').getByRole('button', { name, exact: true }).click();
 
+// Exercise the unconfigured-source UI independently of the optional local dummy database.
+// The real API contract is also covered by backend/tests/test_api.py.
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/metadata', (route) =>
+    route.fulfill({
+      json: {
+        source_status: 'unconfigured',
+        source_kind: 'none',
+        total_records: 0,
+        generated_at: null,
+        earliest_at: null,
+        latest_at: null,
+        exports_available: false,
+        fabs: [],
+        systems: [],
+        processes: [],
+        core_biz: [],
+        log_types: [],
+        retention_days: 7,
+        max_page_size: 1000,
+        timezone: 'Asia/Seoul',
+      },
+    }),
+  );
+  await page.route('**/api/logs/search', (route) =>
+    route.fulfill({
+      status: 503,
+      json: {
+        error: {
+          code: 'SOURCE_NOT_CONFIGURED',
+          message:
+            '로그 데이터 소스가 연결되지 않았습니다. 연결 후 조회와 다운로드를 사용할 수 있습니다.',
+        },
+      },
+    }),
+  );
+});
+
 test('starts without fabricated logs and distinguishes an unconfigured source', async ({
   page,
 }) => {
@@ -327,7 +365,7 @@ test('query loading and errors use the same readable design without fake results
   });
   await page.route('**/api/logs/search', async (route) => {
     await held;
-    await route.continue();
+    await route.fallback();
   });
   await page.goto('/#program=arc');
   await viewer(page).getByLabel('트랜잭션 키', { exact: true }).fill('style-check-condition');

@@ -273,7 +273,9 @@ export default function App() {
           <div className="topbar-right">
             <span className={`connection-indicator ${status}`}>
               <i />
-              {statuses[status]}
+              {metadata?.source_kind === 'dummy' && status === 'connected'
+                ? '더미 데이터 연결됨'
+                : statuses[status]}
             </span>
             <span className="topbar-divider" />
             <span className="locale" title="영문 UI는 후속 범위 협의 예정">
@@ -473,7 +475,9 @@ export default function App() {
                   <p>로그 탐색에서 기간과 검색조건을 지정해 다운로드를 요청하세요.</p>
                   <span className="empty-source">
                     <i />
-                    {statuses[status]}
+                    {metadata?.source_kind === 'dummy' && status === 'connected'
+                      ? '더미 데이터 연결됨'
+                      : statuses[status]}
                   </span>
                 </div>
               )}
@@ -520,7 +524,9 @@ export default function App() {
                 <h2>로그 데이터 소스</h2>
                 <span className={`connection-indicator ${status}`}>
                   <i />
-                  {statuses[status]}
+                  {metadata?.source_kind === 'dummy' && status === 'connected'
+                    ? '더미 데이터 연결됨'
+                    : statuses[status]}
                 </span>
                 <dl>
                   <dt>연결된 시스템</dt>
@@ -531,7 +537,9 @@ export default function App() {
                   <dd>Asia/Seoul (KST)</dd>
                 </dl>
                 <p className="muted-text">
-                  연결 대상과 필드 매핑이 확정되면 데이터 소스를 연동합니다.
+                  {metadata?.source_kind === 'dummy'
+                    ? `개발용 더미 로그 ${metadata.total_records.toLocaleString()}건이 연결되어 있습니다. 실제 운영 로그는 포함하지 않습니다.`
+                    : '연결 대상과 필드 매핑이 확정되면 데이터 소스를 연동합니다.'}
                 </p>
               </section>
             </div>
@@ -637,10 +645,12 @@ export default function App() {
             <div>
               <ArrowDownToLine size={20} />
               <section>
-                <h3>데이터 연결 후 사용할 수 있어요</h3>
+                <h3>현재 데이터와 지원 범위</h3>
                 <p>
-                  현재는 화면 프레임 단계입니다. 실제 로그 조회, 연관검색, 다운로드는 데이터 소스
-                  연동 후 활성화됩니다. SSO와 영문 화면은 후속 협의 항목입니다.
+                  {metadata?.source_kind === 'dummy'
+                    ? '현재는 더미 로그로 검색과 연관검색을 사용할 수 있습니다. 전체 기간 다운로드와 실제 운영 로그는 후속 연동 항목입니다.'
+                    : '데이터 소스 연결 후 조회할 수 있습니다. 전체 기간 다운로드는 작업 실행기 연동이 필요합니다.'}{' '}
+                  SSO와 영문 화면은 후속 협의 항목입니다.
                 </p>
               </section>
             </div>

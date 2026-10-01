@@ -19,8 +19,6 @@ class TimeRange(Contract):
         now = datetime.now(timezone.utc)
         if self.start >= self.end:
             raise ValueError("시작 시간은 종료 시간보다 빨라야 합니다.")
-        if self.start < now - timedelta(days=7):
-            raise ValueError("최근 7일 이내의 로그만 조회할 수 있습니다.")
         if self.end > now + timedelta(seconds=5):
             raise ValueError("미래 시간은 조회할 수 없습니다.")
         return self
@@ -64,6 +62,10 @@ class SearchRequest(Contract):
 
     @model_validator(mode="after")
     def require_transaction_for_all_systems(self):
+        # A signed, short-lived cursor pins the original search interval. Validate
+        # retention on the first page; the repository validates cursor expiry.
+        if not self.cursor and self.time_range.start < datetime.now(timezone.utc) - timedelta(days=7):
+            raise ValueError("최근 7일 이내의 로그만 조회할 수 있습니다.")
         key = self.filters.global_transaction_id if self.program == "acell" else self.filters.transaction_key
         if not self.filters.systems and not key:
             label = "G 트랜잭션 ID" if self.program == "acell" else "트랜잭션 키"
@@ -102,6 +104,7 @@ class LogRecord(Contract):
 class SearchResponse(Contract):
     items: list[LogRecord]
     next_cursor: str | None = None
+    current_cursor: str | None = None
     total: int | None = None
     took_ms: float
 
@@ -121,6 +124,12 @@ class ExportJob(Contract):
 
 class Metadata(Contract):
     source_status: Literal["unconfigured", "connected"]
+    source_kind: Literal["none", "dummy"] = "none"
+    total_records: int = 0
+    generated_at: AwareDatetime | None = None
+    earliest_at: AwareDatetime | None = None
+    latest_at: AwareDatetime | None = None
+    exports_available: bool = False
     fabs: list[str] = Field(default_factory=list)
     systems: list[str] = Field(default_factory=list)
     processes: list[str] = Field(default_factory=list)

@@ -8,6 +8,11 @@ from app.main import app
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def unconfigured_source(monkeypatch):
+    monkeypatch.setenv("Y17_LOG_SOURCE", "unconfigured")
+
+
 def search_body(program="acell"):
     now = datetime.now(timezone.utc)
     return {"program": program, "time_range": {"start": (now - timedelta(hours=1)).isoformat(),

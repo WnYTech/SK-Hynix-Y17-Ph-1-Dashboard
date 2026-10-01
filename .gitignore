@@ -11,3 +11,6 @@ test-results/
 playwright-report/
 *.log
 .DS_Store
+
+# Generated local log dataset (regenerate using backend.app.dummy_data)
+backend/data/

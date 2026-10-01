@@ -11,7 +11,8 @@
     "typecheck": "npm run typecheck --workspace frontend",
     "test:ui": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "data:generate": "python3 -m backend.app.dummy_data"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

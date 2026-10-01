@@ -5,7 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .models import ExportJob, ExportRequest, Metadata, SearchRequest, SearchResponse
-from .repository import LogRepository, SourceUnavailable, get_repository
+from .repository import (LogRepository, SourceUnavailable, InvalidCursor,
+                         ExportUnavailable, QueryTimedOut, get_repository)
 
 app = FastAPI(title="Y17 LMS API", version="0.1.0", docs_url="/api/docs",
               openapi_url="/api/openapi.json", redoc_url=None)
@@ -17,6 +18,27 @@ async def source_unavailable(request: Request, exc: SourceUnavailable):
     return JSONResponse(status_code=503, content={"error": {
         "code": "SOURCE_NOT_CONFIGURED",
         "message": "로그 데이터 소스가 연결되지 않았습니다. 연결 후 조회와 다운로드를 사용할 수 있습니다.",
+    }})
+
+
+@app.exception_handler(InvalidCursor)
+async def invalid_cursor(request: Request, exc: InvalidCursor):
+    return JSONResponse(status_code=422, content={"error": {
+        "code": "INVALID_CURSOR", "message": "페이지 정보가 만료되었거나 검색조건이 변경되었습니다. 다시 검색해 주세요.",
+    }})
+
+
+@app.exception_handler(ExportUnavailable)
+async def export_unavailable(request: Request, exc: ExportUnavailable):
+    return JSONResponse(status_code=501, content={"error": {
+        "code": "EXPORT_NOT_AVAILABLE", "message": "더미 데이터는 검색·상세 조회를 지원합니다. 전체 로그 내보내기는 아직 연결되지 않았습니다.",
+    }})
+
+
+@app.exception_handler(QueryTimedOut)
+async def query_timed_out(request: Request, exc: QueryTimedOut):
+    return JSONResponse(status_code=504, content={"error": {
+        "code": "QUERY_TIMEOUT", "message": "조회 시간이 초과되었습니다. 조회 기간이나 검색조건을 좁혀 주세요.",
     }})
 
 

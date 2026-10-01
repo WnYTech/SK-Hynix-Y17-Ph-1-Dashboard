@@ -1134,3 +1134,52 @@
     transition: none;
   }
 }
+
+/* The active local source is always labelled separately from production data. */
+.log-design .dummy-source-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  background: var(--ws-accent-pale);
+  border: 1px solid var(--ws-accent-border);
+  border-radius: var(--ws-radius);
+  color: var(--ws-accent-text);
+}
+.log-design .dummy-source-banner > svg {
+  flex-shrink: 0;
+}
+.log-design .dummy-source-banner > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.log-design .dummy-source-banner strong {
+  font-size: 16px;
+  font-weight: 650;
+}
+.log-design .dummy-source-banner span {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ws-secondary);
+  overflow-wrap: anywhere;
+}
+.log-design .dummy-source-banner .button {
+  flex-shrink: 0;
+}
+@media (max-width: 720px) {
+  .log-design .dummy-source-banner {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  .log-design .dummy-source-banner > div {
+    flex-basis: calc(100% - 40px);
+  }
+  .log-design .dummy-source-banner .button {
+    width: 100%;
+  }
+}

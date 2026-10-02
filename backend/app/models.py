@@ -65,30 +65,15 @@ class Sort(Contract):
 
 
 class Highlight(Contract):
-    # Cell text must retain whitespace for exact equality with the stored value.
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     transaction_name: str = Field(default="", max_length=10000)
     column: LogColumn | None = None
-    value: str | float | None = Field(default=None)
+    row_id: str | None = Field(default=None, max_length=200)
+    # Retained for older clients; identity is row_id + column, never cell value.
+    value: str | float | None = None
 
     @model_validator(mode="after")
-    def validate_value(self):
+    def normalize_name(self):
         self.transaction_name = self.transaction_name.strip()
-        if self.column == "datetime":
-            try:
-                value = datetime.fromisoformat(str(self.value).replace("Z", "+00:00"))
-                if value.tzinfo is None:
-                    raise ValueError
-            except (ValueError, TypeError):
-                raise ValueError("강조할 로그 시각을 확인해 주세요.") from None
-        if self.column == "elapsed_ms" and self.value is not None:
-            import math
-            try:
-                self.value = float(self.value)
-                if not math.isfinite(self.value):
-                    raise ValueError
-            except (ValueError, TypeError):
-                raise ValueError("강조할 소요 시간을 확인해 주세요.") from None
         return self
 
 

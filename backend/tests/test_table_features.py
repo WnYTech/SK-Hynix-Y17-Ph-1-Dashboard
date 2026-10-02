@@ -42,11 +42,11 @@ def test_counts_and_filter_cover_all_pages(client, program):
     body = query(program)
     all_rows = search(client, {**body, 'page_size': 100})['items']
     selected = all_rows[0]
-    highlight = {'transaction_name': selected['transaction_name'], 'column': 'log_type', 'value': selected['log_type']}
+    highlight = {'transaction_name': selected['transaction_name'], 'column': 'log_type', 'value': selected['log_type'], 'row_id': selected['id']}
     expected = {
         'transaction': [r for r in all_rows if r['transaction_name'] == selected['transaction_name']],
-        'cell': [r for r in all_rows if r['log_type'] == selected['log_type']],
-        'any': [r for r in all_rows if r['transaction_name'] == selected['transaction_name'] or r['log_type'] == selected['log_type']],
+        'cell': [r for r in all_rows if r['id'] == selected['id']],
+        'any': [r for r in all_rows if r['transaction_name'] == selected['transaction_name'] or r['id'] == selected['id']],
     }
     first = search(client, body)
     counted = search(client, {**body, 'highlight': highlight, 'count_only': True, 'cursor': first['current_cursor']})
@@ -65,18 +65,39 @@ def test_counts_and_filter_cover_all_pages(client, program):
     assert empty['items'] == [] and empty['total_pages'] == 0
 
 
-def test_exact_cell_value_and_validation(client):
+def test_single_cell_identity_and_validation(client):
     body = query()
     selected = search(client, body)['items'][0]
-    for field in ['message', 'datetime', 'elapsed_ms']:
-        result = search(client, {**body, 'highlight': {'column': field, 'value': selected[field]}, 'count_only': True})
-        assert result['highlight_counts']['cell'] >= 1
-    result = search(client, {**body, 'highlight': {'column': 'message', 'value': selected['message'] + ' '}, 'count_only': True})
-    assert result['highlight_counts']['cell'] == 0
+    for field in ['message', 'datetime', 'elapsed_ms', 'log_type']:
+        result = search(client, {**body, 'highlight': {'column': field, 'row_id': selected['id']}, 'highlight_mode': 'cell'})
+        assert result['highlight_counts']['cell'] == 1
+        assert [r['id'] for r in result['items']] == [selected['id']]
+    for row_id in [None, 'absent', 'demo-999999', 'demo-99999999999999999999999999']:
+        result = search(client, {**body, 'highlight': {'column': 'message', 'row_id': row_id}, 'count_only': True})
+        assert result['highlight_counts']['cell'] == 0
+    result = search(client, {**body, 'filters': {'systems': ['EAP']}, 'highlight': {'column': 'log_type', 'row_id': selected['id']}, 'highlight_mode': 'cell'})
+    assert result['items'] == [] and result['highlight_counts']['cell'] == 0
     for extra in [
         {'sort': {'field': 'id; DROP TABLE logs'}}, {'sort': {'direction': 'random'}},
-        {'highlight': {'column': 'datetime', 'value': 'yesterday'}},
-        {'highlight': {'column': 'elapsed_ms', 'value': 'not-a-number'}},
-        {'highlight': {'column': 'message = ? --', 'value': ''}},
+        {'highlight': {'column': 'message = ? --'}},
     ]:
         assert client.post('/api/logs/search', json={**body, **extra}).status_code == 422
+
+
+def test_page_fetch_does_not_repeat_highlight_aggregation(client):
+    body = query()
+    selected = search(client, body)['items'][0]
+    result = search(client, {**body, 'highlight': {'transaction_name': selected['transaction_name'], 'column': 'message', 'row_id': selected['id']}})
+    assert result['highlight_counts'] is None
+
+
+def test_name_index_has_safe_fallback(client, database, monkeypatch):
+    from app.dummy_repository import DummyRepository
+    from app.models import SearchRequest
+    monkeypatch.setattr('app.dummy_repository.NAME_INDEX_MIN_ROWS', 0)
+    repository = DummyRepository(database[0])
+    body = SearchRequest(**query(sort={'field': 'transaction_name', 'direction': 'asc'}))
+    indexed = repository.search_sync(body)
+    repository.has_name_index = False
+    fallback = repository.search_sync(body)
+    assert indexed.items == fallback.items

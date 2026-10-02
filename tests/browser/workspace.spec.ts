@@ -87,10 +87,10 @@ test('sidebar separates program fields, columns, detail tabs and request payload
   await expect(viewer(page).getByLabel('서버', { exact: true })).toBeVisible();
   await expect(viewer(page).getByRole('combobox', { name: '로그 종류' })).toBeVisible();
   await expect(
-    viewer(page).getByRole('columnheader', { name: 'G 트랜잭션', exact: true }),
+    viewer(page).getByRole('columnheader', { name: 'G 트랜잭션 컬럼', exact: true }),
   ).toBeVisible();
   await expect(
-    viewer(page).getByRole('columnheader', { name: '소요 (ms)', exact: true }),
+    viewer(page).getByRole('columnheader', { name: '소요 (ms) 컬럼', exact: true }),
   ).toBeVisible();
   for (const name of ['단일 로그', 'S 트랜잭션', 'E 트랜잭션', 'G 트랜잭션']) {
     await expect(viewer(page).getByRole('tab', { name, exact: true })).toBeVisible();
@@ -112,10 +112,10 @@ test('sidebar separates program fields, columns, detail tabs and request payload
   await expect(viewer(page).getByLabel('서버', { exact: true })).toHaveCount(0);
   await expect(viewer(page).getByRole('textbox', { name: '로그 종류' })).toBeVisible();
   await expect(
-    viewer(page).getByRole('columnheader', { name: '트랜잭션 키', exact: true }),
+    viewer(page).getByRole('columnheader', { name: '트랜잭션 키 컬럼', exact: true }),
   ).toBeVisible();
   await expect(
-    viewer(page).getByRole('columnheader', { name: 'G 트랜잭션', exact: true }),
+    viewer(page).getByRole('columnheader', { name: 'G 트랜잭션 컬럼', exact: true }),
   ).toHaveCount(0);
   await expect(viewer(page).getByRole('tab', { name: '트랜잭션 전체 로그' })).toBeVisible();
   await expect(viewer(page).getByRole('tab', { name: 'S 트랜잭션' })).toHaveCount(0);
@@ -123,7 +123,7 @@ test('sidebar separates program fields, columns, detail tabs and request payload
   await expect(page.getByRole('alert')).toContainText('트랜잭션 키가 필요');
   await viewer(page).getByLabel('트랜잭션 키', { exact: true }).fill('key-condition');
   await viewer(page).getByLabel('Full Text').fill('message condition');
-  await viewer(page).getByLabel('로그 종류').fill('A Q Z');
+  await viewer(page).getByLabel('로그 종류', { exact: true }).fill('A Q Z');
   await viewer(page).getByRole('checkbox', { name: '트랜잭션 연관검색' }).check();
   const response = page.waitForResponse((response) => response.url().endsWith('/api/logs/search'));
   await viewer(page).getByRole('button', { name: '검색', exact: true }).click();
@@ -349,7 +349,7 @@ test('WeshBoard design keeps controls aligned and popovers bounded and keyboard 
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('button', { name: '연결 상태 확인', exact: true }).click();
-  await expect(page.locator('.app-shell')).not.toHaveClass(/log-design/);
+  await expect(page.locator('.app-shell')).toHaveClass(/log-design/);
   await page.locator('nav').getByRole('button', { name: 'ARC LMS', exact: true }).click();
   await expect(page.locator('.app-shell')).toHaveClass(/log-design/);
   await expect(viewer(page).getByRole('button', { name: '검색', exact: true })).toHaveCSS(
@@ -403,4 +403,43 @@ test('query loading and errors use the same readable design without fake results
   await page.screenshot({ path: 'test-results/design-detail-dialog-mobile.png' });
   await detail.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(detail).not.toBeVisible();
+});
+
+test('management pages keep the viewer theme for empty, saved and connection states at every width', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await viewer(page).getByRole('button', { name: '조건 저장', exact: true }).click();
+  await page.getByLabel('검색조건 이름', { exact: true }).fill('MES 조회 조건');
+  await page.getByRole('button', { name: '저장', exact: true }).click();
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const [hash, selector] of [
+      ['saved', '.saved-icon'],
+      ['downloads', '.management-empty > svg'],
+      ['connection', '.connection-card-icon'],
+    ]) {
+      await page
+        .locator('.sidebar')
+        .getByRole('button', {
+          name:
+            hash === 'saved' ? '저장된 검색조건' : hash === 'downloads' ? '다운로드' : '연결 상태',
+          exact: true,
+        })
+        .click();
+      await expect(page.locator('.app-shell')).toHaveClass(/log-design/);
+      await expect(page.locator(selector).first()).toBeVisible();
+      await expect(page.locator(selector).first()).toHaveCSS(
+        'background-color',
+        'rgb(255, 240, 225)',
+      );
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+      await page.screenshot({
+        path: `test-results/management-${hash}-${width}.png`,
+        fullPage: true,
+      });
+    }
+  }
 });

@@ -38,20 +38,19 @@ for (const program of ['acell', 'arc']) {
     page.on('request', (request) => {
       if (request.url().endsWith('/api/logs/search')) searches++;
     });
-    await active.getByRole('combobox', { name: '조회 기간 프리셋' }).click();
-    await page.getByRole('option', { name: '최근 30분', exact: true }).click();
-    await active.getByRole('button', { name: '시작 시간 달력 열기' }).click();
+    await active.getByRole('button', { name: '최근 1시간', exact: true }).click();
+    await expect(active.getByRole('combobox', { name: '조회 기간 프리셋' })).toHaveText(
+      '최근 1시간',
+    );
     const target = new Date(Date.now() - 86400000 + 9 * 3600000).toISOString().slice(0, 19);
-    await page.getByLabel('시작 시간 달력 입력', { exact: true }).fill(target);
-    await page.getByRole('button', { name: '기간에 적용', exact: true }).click();
+    await active.getByLabel('시작 시간 달력 입력', { exact: true }).fill(target);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(active.getByLabel('시작 시간', { exact: true })).toHaveValue(
       target.replace('T', ' ') + '.000',
     );
     await expect(active.getByRole('combobox', { name: '조회 기간 프리셋' })).toHaveText(
       '직접 입력',
     );
-    await active.getByRole('button', { name: '종료 시간 달력 열기' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: '닫기', exact: true }).click();
     expect(searches).toBe(0);
     const response = rowsResponse(page);
     await active.getByRole('button', { name: '검색', exact: true }).click();
@@ -155,47 +154,25 @@ for (const program of ['acell', 'arc']) {
       stats.highlight_counts.cell.toLocaleString(),
     );
     for (const [mode, label] of [
-      ['transaction', '동일 트랜잭션명만 보기'],
-      ['cell', '선택 값만 보기'],
-      ['any', '하이라이트된 행만 보기'],
+      ['transaction', '동일 트랜잭션만'],
+      ['cell', '선택 셀만'],
+      ['any', '하이라이트만 보기'],
     ]) {
       const response = rowsResponse(page);
-      await active.getByRole('combobox', { name: '하이라이트 모아보기' }).click();
-      await page.getByRole('option', { name: label, exact: true }).click();
+      await active.getByRole('button', { name: label, exact: true }).click();
       const filtered = await (await response).json();
       expect(filtered.total).toBe(stats.highlight_counts[mode]);
       expect(filtered.base_total).toBe(first.total);
       expect(
-        filtered.items.every((item: { transaction_name: string; log_type: string }) =>
+        filtered.items.every((item: { id: string; transaction_name: string; log_type: string }) =>
           mode === 'transaction'
             ? item.transaction_name === row.transaction_name
             : mode === 'cell'
-              ? item.log_type === row.log_type
-              : item.transaction_name === row.transaction_name || item.log_type === row.log_type,
+              ? item.id === row.id
+              : item.transaction_name === row.transaction_name || item.id === row.id,
         ),
       ).toBe(true);
       await expect(active.locator('.current-page')).toHaveText('1');
-      if (mode === 'cell') {
-        const selectedResponse = rowsResponse(page);
-        await active
-          .locator('tbody tr[data-log-id]')
-          .first()
-          .locator('.number-column button')
-          .click();
-        const selectedResult = await (await selectedResponse).json();
-        await expect(active.getByRole('combobox', { name: '하이라이트 모아보기' })).toHaveText(
-          '동일 트랜잭션명만 보기',
-        );
-        expect(selectedResult.highlight_counts.cell).toBe(0);
-        // Select the original value again before checking the union mode.
-        const restored = rowsResponse(page);
-        await active
-          .locator('tbody tr[data-log-id]')
-          .first()
-          .locator('td[data-column="log_type"] button')
-          .click();
-        await restored;
-      }
     }
     const response = rowsResponse(page);
     await active.getByRole('button', { name: '강조 해제', exact: true }).click();
@@ -211,6 +188,23 @@ for (const program of ['acell', 'arc']) {
     await openData(page, program);
     const active = viewer(page);
     const headers = active.locator('thead th[data-column]');
+    const resize = active.getByRole('separator', { name: 'Datetime 너비 조절', exact: true });
+    const initialWidth = Number(await resize.getAttribute('aria-valuenow'));
+    await resize.scrollIntoViewIfNeeded();
+    const handle = await resize.boundingBox();
+    await page.mouse.move(handle!.x + 4, handle!.y + 15);
+    await page.mouse.down();
+    await page.mouse.move(handle!.x + 104, handle!.y + 15, { steps: 5 });
+    await page.mouse.up();
+    await expect(resize).toHaveAttribute('aria-valuenow', String(initialWidth + 100));
+    await resize.focus();
+    await resize.press('ArrowLeft');
+    await expect(resize).toHaveAttribute('aria-valuenow', String(initialWidth + 80));
+    await expect(active.locator('th[data-column="datetime"]')).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+
     const firstKey = await headers.nth(0).getAttribute('data-column');
     const secondKey = await headers.nth(1).getAttribute('data-column');
     await headers.nth(1).dragTo(headers.nth(0));
@@ -223,7 +217,7 @@ for (const program of ['acell', 'arc']) {
     await page.getByRole('button', { name: '완료', exact: true }).click();
     await expect(headers.nth(0)).toHaveAttribute('data-column', firstKey!);
     await setColor(page, '트랜잭션 강조 색상', '#dd6633');
-    await setColor(page, '선택 값 강조 색상', '#662200');
+    await setColor(page, '선택 셀 강조 색상', '#662200');
     await active
       .locator('tbody tr[data-log-id]')
       .first()
@@ -247,7 +241,10 @@ for (const program of ['acell', 'arc']) {
     );
     await page.screenshot({ path: `test-results/table-${program}-mobile.png`, fullPage: true });
     await page.reload();
-    await expect(viewer(page).getByLabel('선택 값 강조 색상', { exact: true })).toHaveValue(
+    await expect(
+      viewer(page).getByRole('separator', { name: 'Datetime 너비 조절', exact: true }),
+    ).toHaveAttribute('aria-valuenow', String(initialWidth + 80));
+    await expect(viewer(page).getByLabel('선택 셀 강조 색상', { exact: true })).toHaveValue(
       '#662200',
     );
     await expect(viewer(page).getByLabel('트랜잭션 강조 색상', { exact: true })).toHaveValue(

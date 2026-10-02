@@ -26,6 +26,7 @@ FILTER_COLUMNS = {
         "event_transaction_id", "service_transaction_id", "server",
     )},
 }
+NAME_INDEX_MIN_ROWS = 50000
 
 
 def microseconds(value: datetime) -> int:
@@ -37,10 +38,13 @@ class DummyRepository:
         self.path = path
         with closing(self.connect()) as connection:
             self.info = json.loads(connection.execute("SELECT document FROM dataset").fetchone()[0])
+            self.has_name_index = bool(connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='index' AND name='logs_system_name'"
+            ).fetchone())
         if self.info["schema_version"] != SCHEMA_VERSION:
             raise RuntimeError("Regenerate the dummy database with the current generator")
         self.counts: OrderedDict[str, int] = OrderedDict()
-        self.highlights: OrderedDict[str, dict] = OrderedDict()
+        self.highlights: OrderedDict[str, int] = OrderedDict()
         self.lock = Lock()
 
     def connect(self):
@@ -94,6 +98,8 @@ class DummyRepository:
             raise ValueError("Unknown log column")
         if field == "datetime":
             return "time_us"
+        if field == "transaction_name":
+            return "trim(transaction_name)"
         if field in ("sequence", "global_transaction_sequence"):
             return f"CAST({field} AS INTEGER)"
         if field == "elapsed_ms":
@@ -104,14 +110,11 @@ class DummyRepository:
         highlight = request.highlight
         transaction = ("trim(transaction_name) = ?", [highlight.transaction_name]) if highlight.transaction_name else ("0", [])
         cell = ("0", [])
-        if highlight.column:
-            # Compare the raw column (including SEQ text) exactly, independently
-            # of the numeric expression used for ordering.
-            column = "time_us" if highlight.column == "datetime" else highlight.column
-            value = highlight.value
-            if highlight.column == "datetime":
-                value = microseconds(datetime.fromisoformat(str(value).replace("Z", "+00:00")))
-            cell = (f"{column} IS ?", [value])
+        if highlight.column and highlight.row_id:
+            # A cell belongs to one record, even when thousands share its value.
+            raw_id = highlight.row_id.removeprefix("demo-")
+            if raw_id.isascii() and raw_id.isdigit() and len(raw_id) <= 18:
+                cell = ("id = ?", [int(raw_id)])
         union = (f"({transaction[0]} OR {cell[0]})", transaction[1] + cell[1])
         return {"transaction": transaction, "cell": cell, "any": union}
 
@@ -172,18 +175,40 @@ class DummyRepository:
                 base_key = json.dumps([predicate, params])
                 base_total = self.cached(self.counts, base_key, lambda: connection.execute(
                     f"SELECT COUNT(*) FROM logs WHERE {predicate}", params).fetchone()[0])
-                if request.highlight.transaction_name or request.highlight.column:
-                    def count_highlights():
-                        expressions = ", ".join(f"COALESCE(SUM({value[0]}), 0)" for value in selections.values())
-                        bindings = [value for selection in selections.values() for value in selection[1]]
-                        values = connection.execute(f"SELECT {expressions} FROM logs WHERE {predicate}", [*bindings, *params]).fetchone()
-                        return dict(zip(selections, values))
-                    counts = self.cached(self.highlights, json.dumps([base_key, request.highlight.model_dump()]), count_highlights)
+                # SQLite's coarse range estimate otherwise prefers the time index
+                # and sorts hundreds of thousands of full rows. Only use the name
+                # index for broad single-system searches; narrow time windows keep
+                # their efficient range scan. Older databases retain the fallback.
+                name_source = ("logs INDEXED BY logs_system_name" if self.has_name_index
+                    and len(request.filters.systems) == 1 and not request.correlate
+                    and base_total >= NAME_INDEX_MIN_ROWS else "logs")
+                if (request.count_only or request.highlight_mode != "all") and (
+                    request.highlight.transaction_name or request.highlight.column
+                ):
+                    tx, tx_params = selections["transaction"]
+                    cell, cell_params = selections["cell"]
+                    tx_count = self.cached(self.highlights, json.dumps([base_key, tx, tx_params]),
+                        lambda: connection.execute(
+                            f"SELECT COUNT(*) FROM {name_source} WHERE {predicate} AND ({tx})",
+                            [*params, *tx_params]).fetchone()[0]) if tx_params else 0
+                    # Primary-key lookup; do not scan the result for a selected cell.
+                    selected = connection.execute(
+                        f"SELECT ({tx}) FROM logs WHERE ({cell}) AND {predicate}",
+                        [*tx_params, *cell_params, *params]).fetchone() if cell_params else None
+                    cell_count = int(selected is not None)
+                    counts = {"transaction": tx_count, "cell": cell_count,
+                              "any": tx_count + cell_count - int(bool(selected and selected[0]))}
                 else:
-                    counts = {"transaction": 0, "cell": 0, "any": 0}
+                    counts = None if request.highlight_mode == "all" and not request.count_only else {
+                        "transaction": 0, "cell": 0, "any": 0}
                 total = base_total
                 if request.highlight_mode != "all":
-                    selection, bindings = selections[request.highlight_mode]
+                    mode = request.highlight_mode
+                    # The selected cell normally already belongs to the name group.
+                    # Avoid an OR on id that would prevent the name-index lookup.
+                    if mode == "any" and counts["any"] == counts["transaction"]:
+                        mode = "transaction"
+                    selection, bindings = selections[mode]
                     predicate += f" AND ({selection})"
                     params = [*params, *bindings]
                     total = counts[request.highlight_mode]
@@ -205,7 +230,7 @@ class DummyRepository:
                         skip = 0
                     rows = connection.execute(
                         f"SELECT *, {sort_column} AS _sort_value FROM logs WHERE id IN ("
-                        f"SELECT id FROM logs WHERE {page_predicate} ORDER BY {order} LIMIT ? OFFSET ?"
+                        f"SELECT id FROM {name_source if request.sort.field == 'transaction_name' else 'logs'} WHERE {page_predicate} ORDER BY {order} LIMIT ? OFFSET ?"
                         f") ORDER BY {order}",
                         [*page_params, request.page_size, skip],
                     ).fetchall()

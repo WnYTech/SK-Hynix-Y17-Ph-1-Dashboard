@@ -79,11 +79,7 @@ async function searchFixture(page: Page, program: Program) {
         body.highlight?.transaction_name &&
         row.transaction_name.trim() === body.highlight.transaction_name,
     );
-    const cells = all.filter(
-      (row) =>
-        body.highlight?.column &&
-        row[body.highlight.column as keyof LogRecord] === body.highlight.value,
-    );
+    const cells = all.filter((row) => body.highlight?.column && row.id === body.highlight.row_id);
     return route.fulfill({
       json: {
         items: next ? second : first,
@@ -92,11 +88,13 @@ async function searchFixture(page: Page, program: Program) {
         total: metadata.total_records,
         page: next ? 2 : 1,
         total_pages: 2,
-        highlight_counts: {
-          transaction: transaction.length,
-          cell: cells.length,
-          any: new Set([...transaction, ...cells].map((row) => row.id)).size,
-        },
+        highlight_counts: !body.count_only
+          ? null
+          : {
+              transaction: transaction.length,
+              cell: cells.length,
+              any: new Set([...transaction, ...cells].map((row) => row.id)).size,
+            },
         took_ms: 1,
       },
     });
@@ -119,7 +117,7 @@ for (const program of ['acell', 'arc'] as const) {
       await expect(row(page, id)).toHaveClass(/related-row/);
       await expect(cell(page, id, 'transaction_name')).toHaveCSS(
         'background-color',
-        'rgb(255, 241, 230)',
+        'rgb(248, 216, 232)',
       );
     }
     for (const id of ['c', 'empty', 'spaces', 'prefix', 'case']) {
@@ -128,7 +126,7 @@ for (const program of ['acell', 'arc'] as const) {
     await cell(page, 'b', 'transaction_name').hover();
     await expect(cell(page, 'b', 'transaction_name')).toHaveCSS(
       'background-color',
-      'rgb(255, 241, 230)',
+      'rgb(248, 216, 232)',
     );
     await row(page, 'c').locator('.number-column button').click();
     await expect(viewer(page).locator('.related-row')).toHaveCount(1);
@@ -140,29 +138,29 @@ for (const program of ['acell', 'arc'] as const) {
     }
   });
 
-  test(`${program}: cell values highlight only the same column, survive paging and clear on No or condition change`, async ({
+  test(`${program}: exactly one cell is selected despite duplicate values, persists across pages and clears`, async ({
     page,
   }) => {
     await searchFixture(page, program);
     const clicked = cell(page, 'a', 'class_name');
     await clicked.getByRole('button').click();
-    await expect(viewer(page).locator('.highlighted-cell')).toHaveCount(8);
-    await expect(clicked).toHaveCSS('background-color', 'rgb(255, 193, 131)');
+    await expect(viewer(page).locator('.highlighted-cell')).toHaveCount(1);
+    await expect(clicked).toHaveCSS('background-color', 'rgb(255, 230, 128)');
     await page.mouse.move(0, 0);
-    await expect(clicked).toHaveCSS('background-color', 'rgb(255, 193, 131)');
+    await expect(clicked).toHaveCSS('background-color', 'rgb(255, 230, 128)');
     await expect(cell(page, 'a', 'server')).not.toHaveClass(/highlighted-cell/);
-    await expect(cell(page, 'b', 'class_name')).toHaveClass(/highlighted-cell/);
-    await expect(viewer(page).getByTestId('cell-count')).toHaveText('10');
+    await expect(cell(page, 'b', 'class_name')).not.toHaveClass(/highlighted-cell/);
+    await expect(viewer(page).getByTestId('cell-count')).toHaveText('1');
     await expect(viewer(page).getByTestId('transaction-count')).toHaveText('4');
     await viewer(page).getByRole('button', { name: '다음 페이지', exact: true }).click();
     await expect(viewer(page).locator('.current-page')).toHaveText('2');
     await expect(row(page, 'next-match')).toHaveClass(/related-row/);
     await expect(row(page, 'next-other')).not.toHaveClass(/related-row/);
-    await expect(viewer(page).locator('.highlighted-cell')).toHaveCount(2);
+    await expect(viewer(page).locator('.highlighted-cell')).toHaveCount(0);
     await viewer(page).getByRole('button', { name: '이전 페이지', exact: true }).click();
     await expect(viewer(page).locator('.current-page')).toHaveText('1');
     await expect(clicked).toHaveClass(/highlighted-cell/);
-    await expect(viewer(page).locator('.highlighted-cell')).toHaveCount(8);
+    await expect(viewer(page).locator('.highlighted-cell')).toHaveCount(1);
     await row(page, 'c').locator('.number-column button').click();
     await expect(viewer(page).locator('.highlighted-cell')).toHaveCount(0);
     await cell(page, 'a', 'class_name').getByRole('button').click();

@@ -72,6 +72,7 @@ export interface Sort {
   direction: 'asc' | 'desc';
 }
 export interface Highlight {
+  row_id?: string | null;
   transaction_name: string;
   column: LogColumn | null;
   value: string | number | null;

@@ -61,7 +61,7 @@ for (const [program, title, transactionTab] of [
       .first()
       .getByRole('button', { name: 'TransactionHandler', exact: true })
       .click();
-    await expect(active.locator('.highlighted-cell')).toHaveCount(30);
+    await expect(active.locator('.highlighted-cell')).toHaveCount(1);
     const nextResponse = page.waitForResponse(
       (r) => r.url().endsWith('/api/logs/search') && !r.request().postDataJSON().count_only,
     );
@@ -72,14 +72,14 @@ for (const [program, title, transactionTab] of [
     await nextResponse;
     await expect(active.locator('.current-page')).toHaveText('2');
     await expect(active.locator('.log-table')).toHaveAttribute('data-loaded-rows', '1000');
-    await expect(active.locator('.highlighted-cell')).toHaveCount(30);
+    await expect(active.locator('.highlighted-cell')).toHaveCount(0);
     await active
       .locator('.pagination')
       .getByRole('button', { name: '이전 페이지', exact: true })
       .click();
     await expect(active.locator('.current-page')).toHaveText('1');
     await expect(active.locator('.log-table .selected-row')).toHaveCount(1);
-    await expect(active.locator('.highlighted-cell')).toHaveCount(30);
+    await expect(active.locator('.highlighted-cell')).toHaveCount(1);
     await expect(active.locator('.selected-row td[data-column="class_name"]')).toHaveClass(
       /highlighted-cell/,
     );

@@ -95,6 +95,20 @@ export default function ResultsPanel({
   const [scrollTop, setScrollTop] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
   const dragged = useRef<LogColumn | null>(null);
+  const resize = useRef<{
+    key: LogColumn;
+    start: number;
+    width: number;
+    current: number;
+    tableWidth: number;
+  } | null>(null);
+  const columnWidth = (column: (typeof columns)[number]) =>
+    preferences.widths[column.key] ?? Math.round(column.width * 1.2);
+  const setWidth = (key: LogColumn, width: number) =>
+    setPreferences((p) => ({
+      ...p,
+      widths: { ...p.widths, [key]: Math.max(72, Math.min(1200, Math.round(width))) },
+    }));
   const visibleColumns = useMemo(
     () => preferences.order.map((key) => columns.find((column) => column.key === key)!),
     [preferences.order],
@@ -193,8 +207,14 @@ export default function ResultsPanel({
       </>
     );
   }
-  const changeColor = (kind: 'transaction' | 'cell', value: string) =>
+  const changeColor = (kind: 'transaction' | 'cell', value: string) => {
+    const other = kind === 'cell' ? 'transaction' : 'cell';
+    if (value === preferences.colors[other]) {
+      onMessage('선택 셀과 트랜잭션 행에는 서로 다른 색상을 지정해 주세요.');
+      return;
+    }
     setPreferences((previous) => ({ ...previous, colors: { ...previous.colors, [kind]: value } }));
+  };
   const count = (kind: keyof HighlightCounts) =>
     countError ? '집계 실패' : countLoading ? '집계 중…' : counts[kind].toLocaleString();
   return (
@@ -237,6 +257,7 @@ export default function ResultsPanel({
       {!collapsed && (
         <>
           <div className="results-toolbar">
+            <strong className="highlight-title">하이라이트</strong>
             <div className="highlight-control">
               <label title="동일 트랜잭션명 행 강조 색상">
                 <input
@@ -251,16 +272,16 @@ export default function ResultsPanel({
               <span>행</span>
             </div>
             <div className="highlight-control">
-              <label title="같은 컬럼·같은 값의 셀 강조 색상">
+              <label title="클릭한 셀 한 개만 강조">
                 <input
                   type="color"
-                  aria-label="선택 값 강조 색상"
+                  aria-label="선택 셀 강조 색상"
                   value={preferences.colors.cell}
                   onChange={(e) => changeColor('cell', e.target.value)}
                 />
-                <span>선택 값</span>
+                <span>선택 셀</span>
               </label>
-              <strong data-testid="cell-count">{count('cell')}</strong>
+              <strong data-testid="cell-count">{highlight.column ? 1 : 0}</strong>
               <span>셀</span>
             </div>
             <button
@@ -271,21 +292,25 @@ export default function ResultsPanel({
             >
               <RotateCcw size={16} />
             </button>
-            <div className="highlight-filter">
-              <SelectField
-                label="하이라이트 모아보기"
-                value={highlightMode}
-                disabled={loading || !result}
-                onChange={(value) => onHighlightMode(value as HighlightMode)}
-                options={[
-                  { value: 'all', label: '전체 로그 보기' },
-                  ...(highlight.transaction_name
-                    ? [{ value: 'transaction', label: '동일 트랜잭션명만 보기' }]
-                    : []),
-                  ...(highlight.column ? [{ value: 'cell', label: '선택 값만 보기' }] : []),
-                  ...(hasHighlight ? [{ value: 'any', label: '하이라이트된 행만 보기' }] : []),
-                ]}
-              />
+            <div className="highlight-filter" role="group" aria-label="하이라이트 모아보기">
+              {(
+                [
+                  ['all', '전체 보기', true],
+                  ['any', '하이라이트만 보기', hasHighlight],
+                  ['transaction', '동일 트랜잭션만', !!highlight.transaction_name],
+                  ['cell', '선택 셀만', !!highlight.column],
+                ] as const
+              ).map(([mode, label, enabled]) => (
+                <button
+                  key={mode}
+                  className="button secondary"
+                  aria-pressed={highlightMode === mode}
+                  disabled={loading || !result || !enabled}
+                  onClick={() => onHighlightMode(mode)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             <button
               className="text-button"
@@ -300,7 +325,9 @@ export default function ResultsPanel({
             <span>
               {highlightMode !== 'all'
                 ? `전체 ${(result?.base_total ?? total).toLocaleString()}건 중 강조된 ${total.toLocaleString()}건`
-                : '강조 개수는 검색결과 전체 기준입니다.'}
+                : hasHighlight
+                  ? '동일 트랜잭션 개수는 전체 페이지 기준 · 선택 셀은 한 개입니다.'
+                  : '셀을 클릭하면 선택 셀과 같은 트랜잭션명의 행을 구분해 강조합니다.'}
             </span>
             {highlight.column && (
               <span className="selected-value-summary" title={String(highlight.value ?? '빈 값')}>
@@ -316,6 +343,10 @@ export default function ResultsPanel({
               </span>
             )}
           </div>
+          <div className="table-instructions">
+            머리글 클릭: 오름차순·내림차순 정렬 · 머리글 드래그: 순서 변경 · 컬럼 경계 드래그: 너비
+            조절
+          </div>
           <div
             className="table-scroll"
             ref={scroller}
@@ -326,16 +357,18 @@ export default function ResultsPanel({
               aria-rowcount={rows.length + 1}
               data-loaded-rows={rows.length}
               style={{
-                width:
-                  64 +
-                  visibleColumns.reduce((sum, column) => sum + Math.round(column.width * 1.2), 0),
+                width: 64 + visibleColumns.reduce((sum, column) => sum + columnWidth(column), 0),
                 minWidth: '100%',
               }}
             >
               <colgroup>
                 <col style={{ width: 64 }} />
                 {visibleColumns.map((column) => (
-                  <col key={column.key} style={{ width: Math.round(column.width * 1.2) }} />
+                  <col
+                    key={column.key}
+                    data-column={column.key}
+                    style={{ width: columnWidth(column) }}
+                  />
                 ))}
               </colgroup>
               <thead>
@@ -345,6 +378,7 @@ export default function ResultsPanel({
                     <th
                       key={column.key}
                       data-column={column.key}
+                      aria-label={`${column.label} 컬럼`}
                       aria-sort={
                         sort.field === column.key
                           ? sort.direction === 'asc'
@@ -354,6 +388,10 @@ export default function ResultsPanel({
                       }
                       draggable
                       onDragStart={(event) => {
+                        if (resize.current) {
+                          event.preventDefault();
+                          return;
+                        }
                         dragged.current = column.key;
                         event.dataTransfer.setData('text/plain', column.key);
                         event.dataTransfer.effectAllowed = 'move';
@@ -393,6 +431,61 @@ export default function ResultsPanel({
                           <ArrowUpDown size={14} />
                         )}
                       </button>
+                      <span
+                        className="column-resize"
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label={`${column.label} 너비 조절`}
+                        tabIndex={0}
+                        aria-valuemin={72}
+                        aria-valuemax={1200}
+                        aria-valuenow={columnWidth(column)}
+                        title="드래그 또는 좌우 방향키로 너비 조절 · 더블클릭하면 기본 너비"
+                        onClick={(e) => e.stopPropagation()}
+                        onDoubleClick={() => setWidth(column.key, column.width * 1.2)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                            event.preventDefault();
+                            setWidth(
+                              column.key,
+                              columnWidth(column) + (event.key === 'ArrowRight' ? 20 : -20),
+                            );
+                          }
+                        }}
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          event.currentTarget.setPointerCapture(event.pointerId);
+                          const width = columnWidth(column);
+                          resize.current = {
+                            key: column.key,
+                            start: event.clientX,
+                            width,
+                            current: width,
+                            tableWidth:
+                              64 + visibleColumns.reduce((sum, c) => sum + columnWidth(c), 0),
+                          };
+                        }}
+                        onPointerMove={(event) => {
+                          const active = resize.current;
+                          if (!active || active.key !== column.key) return;
+                          active.current = Math.max(
+                            72,
+                            Math.min(1200, active.width + event.clientX - active.start),
+                          );
+                          const col = scroller.current?.querySelector<HTMLElement>(
+                            `col[data-column="${column.key}"]`,
+                          );
+                          const table = scroller.current?.querySelector('table');
+                          if (col) col.style.width = `${active.current}px`;
+                          if (table)
+                            table.style.width = `${active.tableWidth + active.current - active.width}px`;
+                        }}
+                        onLostPointerCapture={() => {
+                          if (resize.current) setWidth(resize.current.key, resize.current.current);
+                          resize.current = null;
+                        }}
+                      />
                     </th>
                   ))}
                 </tr>
@@ -630,10 +723,14 @@ export default function ResultsPanel({
             <button
               className="button secondary"
               onClick={() =>
-                setPreferences((p) => ({ ...p, order: [...programs[conditions.program].columns] }))
+                setPreferences((p) => ({
+                  ...p,
+                  order: [...programs[conditions.program].columns],
+                  widths: {},
+                }))
               }
             >
-              기본 순서로
+              순서·너비 초기화
             </button>
             <button className="button primary" onClick={() => setColumnsOpen(false)}>
               완료

@@ -96,6 +96,7 @@ export default function SearchPanel({
         </div>
       </div>
       <form
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           onSearch();
@@ -107,6 +108,20 @@ export default function SearchPanel({
             <strong>조회 기간</strong>
             <span>KST · UTC+09:00</span>
             <span className="retention">최근 7일 이내</span>
+          </div>
+          <div className="time-shortcuts" role="group" aria-label="빠른 조회 기간">
+            {timePresets
+              .filter(([value]) => ['15m', '1h', '6h', '24h', '7d'].includes(value))
+              .map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  aria-pressed={c.preset === value}
+                  onClick={() => onChange({ ...c, preset: value, ...presetRange(value) })}
+                >
+                  {label}
+                </button>
+              ))}
           </div>
           <div className="time-controls">
             <SelectField

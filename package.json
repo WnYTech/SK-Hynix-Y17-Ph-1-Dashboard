@@ -12,7 +12,8 @@
     "test:ui": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "data:generate": "python3 -m backend.app.dummy_data"
+    "data:generate": "python3 -m backend.app.dummy_data",
+    "data:optimize": "python3 -m backend.app.optimize_dummy"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

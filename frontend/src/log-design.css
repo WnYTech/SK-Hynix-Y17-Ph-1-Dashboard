@@ -1,6 +1,4 @@
-/* Acell / ARC only. Structure follows active WeshBoard panels and controls.
-   Red/orange accent tones follow the user-provided SK hynix logo.
-   Keep this scoped so the other pages retain their existing presentation. */
+/* Shared workspace theme: active WeshBoard panels and controls, SK hynix accents. */
 .log-design {
   --ws-background: #f5f5f6;
   --ws-surface: #fff;
@@ -1435,5 +1433,190 @@
   }
   .log-design .table-footer {
     padding: 12px;
+  }
+}
+
+/* Direct range selection and persistent table tools. */
+.log-design .direct-calendar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  height: 42px;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-secondary);
+}
+.log-design .direct-calendar:hover,
+.log-design .direct-calendar:focus-within {
+  border-color: var(--ws-primary);
+  color: var(--ws-primary);
+  background: var(--ws-primary-pale);
+}
+.log-design .direct-calendar input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-width: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.log-design .time-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+.log-design .time-shortcuts button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--ws-border);
+  border-radius: 6px;
+  background: var(--ws-surface);
+  color: var(--ws-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.log-design .time-shortcuts button:hover,
+.log-design .time-shortcuts button[aria-pressed='true'],
+.log-design .highlight-filter button[aria-pressed='true'] {
+  background: var(--ws-primary-soft);
+  border-color: var(--ws-primary-border);
+  color: var(--ws-primary-text);
+}
+.log-design .highlight-title {
+  font-size: 15px;
+}
+.log-design .highlight-control {
+  padding: 6px 10px;
+  border: 1px solid var(--ws-border);
+  border-radius: 8px;
+  background: var(--ws-surface-soft);
+}
+.log-design .highlight-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 100%;
+  max-width: none;
+}
+.log-design .table-instructions {
+  padding: 6px 16px 12px;
+  font-size: 14px;
+  color: var(--ws-muted);
+}
+.log-design .virtual-table th {
+  position: sticky;
+  padding-right: 16px;
+}
+.log-design .column-sort {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.log-design .column-resize {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  border-right: 2px solid var(--ws-border);
+}
+.log-design .column-resize:hover,
+.log-design .column-resize:focus-visible {
+  border-right-color: var(--ws-primary);
+  background: var(--ws-primary-soft);
+  outline: none;
+}
+
+/* The same active theme now includes downloads, saved conditions and connections. */
+.log-design .management-panel .panel-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.log-design .management-empty {
+  gap: 12px;
+  padding: 40px 24px;
+}
+.log-design .management-empty > svg {
+  color: var(--ws-accent);
+  background: var(--ws-accent-soft);
+  border: 1px solid var(--ws-accent-border);
+  border-radius: 12px;
+  box-sizing: content-box;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+.log-design .management-empty h3,
+.log-design .saved-item h3 {
+  color: var(--ws-text);
+  font-weight: 650;
+  font-size: 18px;
+}
+.log-design .management-empty p,
+.log-design .saved-item p,
+.log-design .muted-text {
+  color: var(--ws-secondary);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.log-design .saved-list {
+  padding: 8px 20px;
+}
+.log-design .saved-item {
+  border-color: var(--ws-divider);
+}
+.log-design .saved-item > div {
+  min-width: 0;
+}
+.log-design .saved-icon,
+.log-design .connection-card-icon {
+  flex-shrink: 0;
+  color: var(--ws-accent-text);
+  background: var(--ws-accent-soft);
+  border: 1px solid var(--ws-accent-border);
+  border-radius: var(--ws-radius);
+}
+.log-design .connection-card {
+  padding: 24px;
+  min-width: 0;
+}
+.log-design .connection-card h2 {
+  color: var(--ws-text);
+  font-size: 22px;
+  font-weight: 650;
+}
+.log-design .connection-card dl {
+  border-color: var(--ws-divider);
+  font-size: 15px;
+}
+.log-design .connection-card dt {
+  color: var(--ws-muted);
+}
+.log-design .connection-card dd {
+  color: var(--ws-text);
+  overflow-wrap: anywhere;
+}
+.log-design .connection-card .button-group {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .log-design .connection-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .log-design .connection-card {
+    padding: 20px;
+  }
+  .log-design .management-empty {
+    padding: 28px 16px;
+  }
+  .log-design .saved-item {
+    flex-wrap: wrap;
+  }
+  .log-design .saved-item > div {
+    flex-basis: calc(100% - 60px);
   }
 }

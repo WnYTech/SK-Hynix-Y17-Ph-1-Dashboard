@@ -65,9 +65,11 @@ export default function Workspace({
   const pageCache = useRef(new Map<number, { result: SearchResponse; at: number }>());
   const queryKey = useRef('');
   const queryStartedAt = useRef(0);
+  const countSnapshot = useRef<{ cursor: string | null; sort: Sort } | null>(null);
   const highlight = useMemo<Highlight>(
     () => ({
       transaction_name: selected ? transactionHighlightName(selected) : '',
+      row_id: selected?.id ?? null,
       column: highlightedColumn,
       value: selected && highlightedColumn ? selected[highlightedColumn] : null,
     }),
@@ -91,6 +93,7 @@ export default function Workspace({
     setPage(1);
     cursors.current.clear();
     pageCache.current.clear();
+    countSnapshot.current = null;
     setHighlightMode('all');
     setCounts({ transaction: 0, cell: 0, any: 0 });
     setSelected(null);
@@ -137,7 +140,7 @@ export default function Workspace({
         page: target,
         page_size: size,
         sort: nextSort,
-        highlight: nextHighlight,
+        highlight: nextMode === 'all' ? undefined : nextHighlight,
         highlight_mode: nextMode,
         cursor: cursors.current.get(target) ?? cursors.current.get(1) ?? null,
       };
@@ -146,6 +149,8 @@ export default function Workspace({
       const actualPage = response.page ?? target;
       if (response.current_cursor) cursors.current.set(actualPage, response.current_cursor);
       if (response.next_cursor) cursors.current.set(actualPage + 1, response.next_cursor);
+      if (nextMode === 'all')
+        countSnapshot.current = { cursor: response.current_cursor ?? null, sort: nextSort };
       if (!hit) {
         pageCache.current.set(actualPage, { result: response, at: queryStartedAt.current });
         if (pageCache.current.size > 6)
@@ -185,7 +190,7 @@ export default function Workspace({
     }
   };
   useEffect(() => {
-    if (!search || !selected || highlightMode !== 'all' || loading) {
+    if (!search || !selected || highlightMode !== 'all') {
       setCountLoading(false);
       setCountError('');
       return;
@@ -198,11 +203,11 @@ export default function Workspace({
         .search(
           {
             ...search,
-            sort,
             highlight,
             highlight_mode: 'all',
             page: 1,
-            cursor: cursors.current.get(1) ?? null,
+            cursor: countSnapshot.current?.cursor ?? null,
+            sort: countSnapshot.current?.sort,
             count_only: true,
           },
           active.signal,
@@ -222,7 +227,7 @@ export default function Workspace({
       clearTimeout(timer);
       active.abort();
     };
-  }, [search, selected, highlight, sort, highlightMode, loading]);
+  }, [search, selected, highlight, highlightMode]);
   const selectRow = (row: LogRecord, column?: LogColumn) => {
     if (loading) return;
     setSelected(row);
@@ -237,6 +242,7 @@ export default function Workspace({
             : highlightMode,
         highlight: {
           transaction_name: transactionHighlightName(row),
+          row_id: row.id,
           column: column ?? null,
           value: column ? row[column] : null,
         },

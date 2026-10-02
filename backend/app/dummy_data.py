@@ -111,6 +111,8 @@ def generate(path: Path, rows: int = 3_000_000, *, now: datetime | None = None,
         if progress:
             print("Building time, system and transaction indexes…", flush=True)
         connection.execute("CREATE INDEX logs_time ON logs(time_us DESC, id DESC)")
+        from .optimize_dummy import NAME_INDEX
+        connection.execute(NAME_INDEX)
         for column in ("system", "global_transaction_id", "transaction_key", "event_transaction_id", "service_transaction_id"):
             # Include ARC keys in the system index so wide correlation seed scans
             # do not read hundreds of thousands of complete messages.

@@ -7,7 +7,7 @@ for (const program of ['acell', 'arc']) {
     await page.goto(`/#program=${program}&system=MES`);
     const active = page.locator('.program-workspace:visible .viewer-container:visible');
     const date = new Date(Date.now() - 3 * 86400000 + 9 * 3600000).toISOString().slice(0, 10);
-    await active.getByLabel('시작 시간', { exact: true }).fill(`${date} 23:59:59.999999999`);
+    await active.getByLabel('시작 시간', { exact: true }).fill(`${date} 23:59:59.999`);
     let searches = 0;
     page.on('request', (request) => {
       if (request.url().endsWith('/api/logs/search')) searches++;
@@ -21,7 +21,7 @@ for (const program of ['acell', 'arc']) {
       ['시', '23', '00'],
       ['분', '59', '00'],
       ['초', '59', '00'],
-      ['나노초 (ns)', '999999999', '000000000'],
+      ['밀리초 (ms)', '999', '000'],
     ]) {
       await wheel(unit).hover();
       const before = await calendar.evaluate((el) => [el.scrollTop, window.scrollY]);
@@ -53,10 +53,10 @@ for (const program of ['acell', 'arc']) {
     await page.mouse.move(handle!.x + handle!.width / 2, handle!.y - 45, { steps: 6 });
     await page.mouse.up();
     await expect(input('시')).toHaveValue('01');
-    await input('나노초 (ns)').fill('123456789');
-    await wheel('나노초 (ns)').hover();
+    await input('밀리초 (ms)').fill('123');
+    await wheel('밀리초 (ms)').hover();
     await page.mouse.wheel(0, 30);
-    await expect(input('나노초 (ns)')).toHaveValue('123456790');
+    await expect(input('밀리초 (ms)')).toHaveValue('124');
     await page.setViewportSize({ width: 320, height: 740 });
     await wheel('분').scrollIntoViewIfNeeded();
     const touch = await page.context().newCDPSession(page);
@@ -72,14 +72,14 @@ for (const program of ['acell', 'arc']) {
     await expect(input('분')).toHaveValue('00');
     await touch.detach();
     expect(await calendar.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
-    await expect(calendar.locator('output')).toHaveText(`${date} 01:00:59.123456790`);
+    await expect(calendar.locator('output')).toHaveText(`${date} 01:00:59.124`);
     await expect(calendar).not.toContainText(/오전|오후|AM|PM/);
     expect(searches).toBe(0);
     await calendar.screenshot({ path: `test-results/wheel-${program}-320.png` });
     await wheel('분').press('Escape');
     await expect(calendar).not.toBeVisible();
     await active.getByRole('button', { name: '시작 시간 달력 열기', exact: true }).click();
-    await expect(input('나노초 (ns)')).toHaveValue('123456790');
+    await expect(input('밀리초 (ms)')).toHaveValue('124');
     await expect(wheel('분')).toHaveAttribute('aria-valuenow', '0');
   });
 }

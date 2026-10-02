@@ -200,6 +200,13 @@ test('legacy saved program conditions migrate and hidden fields are omitted from
     const saved = JSON.parse(localStorage.getItem('y17:conditions:v1')!);
     delete saved[0].conditions.program;
     saved[0].conditions.profile = 'arc';
+    saved[0].conditions.preset = 'custom';
+    const time = new Date(Date.now() - 3600000 + 9 * 3600000)
+      .toISOString()
+      .slice(0, 19)
+      .replace('T', ' ');
+    saved[0].conditions.start = `${time}.123456789`;
+    saved[0].conditions.end = `${time}.124987654`;
     saved[0].conditions.fields.global_transaction_id = 'old-hidden-input';
     localStorage.setItem('y17:conditions:v1', JSON.stringify(saved));
   });
@@ -212,6 +219,12 @@ test('legacy saved program conditions migrate and hidden fields are omitted from
   const result = await response;
   expect(result.status()).toBe(503);
   expect(result.request().postDataJSON().filters.global_transaction_id).toEqual([]);
+  await expect(viewer(page).getByLabel('시작 시간', { exact: true })).toHaveValue(/\.123$/);
+  await expect(viewer(page).getByLabel('종료 시간', { exact: true })).toHaveValue(/\.124$/);
+  const range = result.request().postDataJSON().time_range;
+  expect(range.start).toMatch(/\.123Z$/);
+  expect(range.end).toMatch(/\.124Z$/);
+  expect(new Date(range.end).getTime() - new Date(range.start).getTime()).toBe(1);
 });
 
 test('program links and a new window retain the selected program', async ({ page, context }) => {

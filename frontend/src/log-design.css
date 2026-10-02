@@ -1706,7 +1706,7 @@
 }
 .log-design .calendar-time {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(112px, 1.8fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(100px, 1.5fr);
   gap: 8px;
   border-top: 1px solid var(--ws-divider);
   margin-top: 14px;

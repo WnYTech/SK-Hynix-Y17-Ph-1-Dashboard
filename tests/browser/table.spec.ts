@@ -57,13 +57,13 @@ for (const program of ['acell', 'arc']) {
       ['시', '13'],
       ['분', '14'],
       ['초', '15'],
-      ['나노초 (ns)', '123456789'],
+      ['밀리초 (ms)', '123'],
     ])
       await calendar.getByLabel(`시작 시간 ${unit}`, { exact: true }).fill(value);
     await expect(active.getByLabel('시작 시간', { exact: true })).toHaveValue(
-      `${target} 13:14:15.123456789`,
+      `${target} 13:14:15.123`,
     );
-    await expect(calendar.locator('output')).toHaveText(`${target} 13:14:15.123456789`);
+    await expect(calendar.locator('output')).toHaveText(`${target} 13:14:15.123`);
     await expect(active.getByRole('combobox', { name: '조회 기간 프리셋' })).toHaveText(
       '직접 입력',
     );
@@ -88,10 +88,23 @@ for (const program of ['acell', 'arc']) {
     const response = rowsResponse(page);
     await active.getByRole('button', { name: '검색', exact: true }).click();
     const request = (await response).request().postDataJSON();
-    expect(request.time_range.start).toBe(`${target}T04:14:15.123456789Z`);
+    expect(request.time_range.start).toBe(`${target}T04:14:15.123Z`);
     await expect(active.getByLabel('시작 시간', { exact: true })).toHaveValue(
-      `${target} 13:14:15.123456789`,
+      `${target} 13:14:15.123`,
     );
+    await active.getByLabel('시작 시간', { exact: true }).fill(`${target} 13:14:15.1234`);
+    await active.getByRole('button', { name: '검색', exact: true }).click();
+    await expect(active.getByRole('alert')).toContainText('최대 3자리');
+    await active.getByLabel('시작 시간', { exact: true }).fill(`${target} 13:14:15.123`);
+    await active.getByLabel('종료 시간', { exact: true }).fill(`${target} 13:14:15.124`);
+    const millisecondResponse = rowsResponse(page);
+    await active.getByRole('button', { name: '검색', exact: true }).click();
+    const result = await millisecondResponse;
+    expect(result.status()).toBe(200);
+    expect(result.request().postDataJSON().time_range).toEqual({
+      start: `${target}T04:14:15.123Z`,
+      end: `${target}T04:14:15.124Z`,
+    });
   });
 
   test(`${program}: virtual rows, direct pages, final page and global sorting`, async ({

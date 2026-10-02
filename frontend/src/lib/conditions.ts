@@ -39,11 +39,7 @@ export function formatDate(value: string | Date): string {
     .toISOString()
     .replace('T', ' ')
     .replace('Z', '');
-  const fraction =
-    typeof value === 'string' ? value.match(/\.(\d{1,9})(?:Z|[+-]\d{2}:\d{2})?$/)?.[1] : null;
-  return fraction && /[1-9]/.test(fraction.slice(3))
-    ? formatted.replace(/\.\d{3}$/, `.${fraction}`)
-    : formatted;
+  return formatted;
 }
 
 export function presetRange(preset: string) {
@@ -92,11 +88,11 @@ export function parseDate(value: string): Date {
   // Text copied from the results is interpreted in the displayed timezone (KST).
   let normalized = value.trim().replace(' ', 'T');
   const match = normalized.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:\d{2})?$/,
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})?$/,
   );
   if (!match)
     throw new Error(
-      '시간을 YYYY-MM-DD HH:mm:ss 형식으로 입력해 주세요. 소수점 아래는 나노초까지 최대 9자리입니다.',
+      '시간을 YYYY-MM-DD HH:mm:ss.SSS 형식으로 입력해 주세요. 밀리초(ms)는 소수점 아래 최대 3자리입니다.',
     );
   const [, y, m, d, h, minute, s = '0'] = match;
   const days = new Date(Date.UTC(Number(y), Number(m), 0)).getUTCDate();
@@ -108,28 +104,15 @@ export function parseDate(value: string): Date {
   return date;
 }
 
-export function preciseTimestamp(value: string) {
-  const date = parseDate(value);
-  const fraction = (value.trim().match(/\.(\d{1,9})(?:Z|[+-]\d{2}:\d{2})?$/)?.[1] ?? '').padEnd(
-    9,
-    '0',
-  );
-  return {
-    nanoseconds: BigInt(date.getTime()) * 1000000n + BigInt(fraction.slice(3)),
-    iso: date.toISOString().replace(/\.\d{3}Z$/, `.${fraction}Z`),
-  };
-}
-
 export function toRequest(conditions: Conditions): SearchRequest {
   const range = conditions.preset === 'custom' ? conditions : presetRange(conditions.preset);
-  const start = preciseTimestamp(range.start),
-    end = preciseTimestamp(range.end);
-  const now = BigInt(Date.now()) * 1000000n;
-  if (start.nanoseconds >= end.nanoseconds)
-    throw new Error('시작 시간은 종료 시간보다 빨라야 합니다.');
-  if (start.nanoseconds < now - 604800000000000n)
+  const start = parseDate(range.start),
+    end = parseDate(range.end);
+  const now = Date.now();
+  if (start.getTime() >= end.getTime()) throw new Error('시작 시간은 종료 시간보다 빨라야 합니다.');
+  if (start.getTime() < now - 7 * 86400000)
     throw new Error('최근 7일 이내의 로그만 조회할 수 있습니다.');
-  if (end.nanoseconds > now + 5000000000n) throw new Error('미래 시간은 조회할 수 없습니다.');
+  if (end.getTime() > now + 5000) throw new Error('미래 시간은 조회할 수 없습니다.');
   const config = programs[conditions.program];
   const fields = { ...emptyFields };
   for (const key of config.fields) fields[key] = conditions.fields[key];
@@ -147,7 +130,7 @@ export function toRequest(conditions: Conditions): SearchRequest {
   ) as SearchRequest['filters'];
   return {
     program: conditions.program,
-    time_range: { start: start.iso, end: end.iso },
+    time_range: { start: start.toISOString(), end: end.toISOString() },
     filters,
     correlate: conditions.program === 'arc' && conditions.correlate,
     page_size: conditions.pageSize,
@@ -171,7 +154,9 @@ export function isConditions(value: unknown): value is Conditions {
 }
 
 export function normalizeConditions(value: Conditions): Conditions {
-  // Preserve existing saved input and migrate older saves to their own program.
+  // Preserve saved fields and migrate older program and sub-millisecond values.
+  const milliseconds = (time: string) =>
+    time.replace(/(\.\d{3})\d{1,6}(?=(?:Z|[+-]\d{2}:\d{2})?$)/, '$1');
   const fields = { ...emptyFields };
   for (const key of Object.keys(fields) as (keyof Fields)[]) fields[key] = value.fields[key];
   const legacy = value as Conditions & { profile?: unknown };
@@ -187,8 +172,8 @@ export function normalizeConditions(value: Conditions): Conditions {
     program,
     fields,
     preset: value.preset,
-    start: value.start,
-    end: value.end,
+    start: milliseconds(value.start),
+    end: milliseconds(value.end),
     correlate: value.correlate,
     pageSize: value.pageSize,
   };

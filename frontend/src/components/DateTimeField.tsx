@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { formatDate, parseDate } from '../lib/conditions';
 import TimeWheel from './TimeWheel';
 
-type Parts = { date: string; hour: string; minute: string; second: string; nano: string };
+type Parts = { date: string; hour: string; minute: string; second: string; millisecond: string };
 const pad = (value: string | number, width = 2) => String(value).padStart(width, '0');
 function partsFrom(value: string): Parts {
   let date: Date;
@@ -13,18 +13,16 @@ function partsFrom(value: string): Parts {
     date = new Date();
   }
   const formatted = formatDate(date);
-  const fraction =
-    value.trim().match(/\.(\d{1,9})(?:Z|[+-]\d{2}:\d{2})?$/)?.[1] ?? formatted.slice(20);
   return {
     date: formatted.slice(0, 10),
     hour: formatted.slice(11, 13),
     minute: formatted.slice(14, 16),
     second: formatted.slice(17, 19),
-    nano: fraction.padEnd(9, '0'),
+    millisecond: formatted.slice(20),
   };
 }
 const compose = (p: Parts) =>
-  `${p.date} ${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}.${pad(p.nano, 9)}`;
+  `${p.date} ${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}.${pad(p.millisecond, 3)}`;
 
 export default function DateTimeField({
   label,
@@ -111,7 +109,7 @@ export default function DateTimeField({
           aria-label={label}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="YYYY-MM-DD HH:mm:ss.nnnnnnnnn"
+          placeholder="YYYY-MM-DD HH:mm:ss.SSS"
           spellCheck={false}
         />
         <button
@@ -122,7 +120,7 @@ export default function DateTimeField({
           aria-expanded={open}
           aria-haspopup="dialog"
           aria-controls={id}
-          title={`${label} · 날짜와 시·분·초·나노초 선택`}
+          title={`${label} · 날짜와 시·분·초·밀리초 선택`}
           onClick={() => (open ? close() : show())}
         >
           <CalendarDays size={18} />
@@ -211,13 +209,13 @@ export default function DateTimeField({
         <p className="calendar-wheel-hint">
           휠·위아래 드래그로 선택하거나 아래 칸에 직접 입력하세요.
         </p>
-        <div className="calendar-time" role="group" aria-label="시·분·초·나노초 입력">
+        <div className="calendar-time" role="group" aria-label="시·분·초·밀리초 입력">
           {(
             [
               ['hour', '시', '00–23', 2, 23],
               ['minute', '분', '00–59', 2, 59],
               ['second', '초', '00–59', 2, 59],
-              ['nano', '나노초 (ns)', '9자리', 9, 999999999],
+              ['millisecond', '밀리초 (ms)', '000–999', 3, 999],
             ] as const
           ).map(([key, title, hint, digits, max]) => (
             <div key={key} className="calendar-time-field">
@@ -267,9 +265,9 @@ export default function DateTimeField({
           <output>{compose(parts)}</output>
         </div>
         <p className="calendar-hint">
-          소수점 아래 9자리가 나노초입니다.
+          소수점 아래 3자리가 밀리초(ms)입니다.
           <br />
-          1초 = 1,000,000,000ns · 입력 즉시 반영
+          1초 = 1,000ms · 입력 즉시 반영
         </p>
         <div className="calendar-footer">
           <span>최근 7일 이내</span>

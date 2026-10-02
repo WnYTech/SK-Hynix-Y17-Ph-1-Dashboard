@@ -1,0 +1,1185 @@
+/* Acell / ARC only. Structure follows active WeshBoard panels and controls.
+   Red/orange accent tones follow the user-provided SK hynix logo.
+   Keep this scoped so the other pages retain their existing presentation. */
+.log-design {
+  --ws-background: #f5f5f6;
+  --ws-surface: #fff;
+  --ws-surface-soft: #f7f7f8;
+  --ws-border: #dedee2;
+  --ws-divider: #ededf0;
+  --ws-text: #242426;
+  --ws-secondary: #525257;
+  --ws-muted: #707077;
+  --ws-primary: #ea002c;
+  --ws-primary-hover: #c40025;
+  --ws-primary-text: #b80023;
+  --ws-primary-soft: #fde6eb;
+  --ws-primary-pale: #fff5f7;
+  --ws-primary-border: #f3b8c4;
+  --ws-accent: #f58220;
+  --ws-accent-text: #a54f0c;
+  --ws-accent-soft: #fff0e1;
+  --ws-accent-pale: #fffaf5;
+  --ws-accent-border: #f5cfae;
+  --ws-danger: #9f1239;
+  --ws-danger-soft: #fff1f2;
+  --ws-danger-border: #fecdd3;
+  --ws-radius: 8px;
+  --ws-control-height: 42px;
+  --ws-card-shadow: 0 6px 16px rgb(34 41 49 / 7%);
+  --ws-popup-shadow: 0 8px 22px rgb(39 53 77 / 16%);
+  --teal: var(--ws-primary);
+  --teal-soft: var(--ws-primary-soft);
+  --border: var(--ws-border);
+  --muted: var(--ws-muted);
+  background: var(--ws-background);
+  color: var(--ws-text);
+  font-family:
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Noto Sans KR',
+    Arial,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-synthesis: weight;
+}
+.log-design ::selection {
+  background: var(--ws-primary-soft);
+  color: var(--ws-text);
+}
+.log-design .lucide {
+  stroke-width: 1.8;
+}
+.log-design :is(button, a):focus-visible {
+  outline: 2px solid var(--ws-primary);
+  outline-offset: 3px;
+}
+.log-design :is(input, textarea):focus {
+  border-color: var(--ws-primary);
+  box-shadow: 0 0 0 3px var(--ws-primary-soft);
+}
+.log-design :is(input, textarea)::placeholder {
+  color: #737b86;
+  opacity: 1;
+}
+.log-design :is(input, textarea) {
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-text);
+}
+.log-design input:not([type='checkbox']):not([type='radio']) {
+  height: var(--ws-control-height);
+  padding: 0 12px;
+}
+.log-design :is(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--ws-primary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.log-design :is(button, input, textarea) {
+  transition:
+    border-color 150ms,
+    background-color 150ms,
+    color 150ms,
+    box-shadow 150ms;
+}
+.log-design :is(button, input, textarea):disabled {
+  opacity: 1;
+  color: #7b8189;
+  background: #f0f2f4;
+  border-color: #e1e4e8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Existing navigation and page structure, with logo-inspired red/orange accents. */
+.log-design .sidebar {
+  background: #1a1a1a;
+  color: #b9bbc0;
+}
+.log-design .brand-icon {
+  background: var(--ws-primary);
+  box-shadow: none;
+}
+.log-design .brand-dot {
+  color: var(--ws-accent);
+}
+.log-design .brand small {
+  color: #b9bbc0;
+}
+.log-design :is(.project-card, .environment-card) {
+  background: #222;
+  border-color: #393939;
+}
+.log-design :is(.project-avatar, .wny-mark) {
+  background: #333;
+  color: #dadbdd;
+}
+.log-design :is(.project-card strong, .environment-title, .sidebar-signature) {
+  color: #eee;
+}
+.log-design
+  :is(
+    .project-card div > span,
+    .environment-card p,
+    .version-label,
+    .version-label span,
+    .sidebar-signature small
+  ) {
+  color: #aaaeb4;
+}
+.log-design .nav-section-label {
+  color: #9b9fa6;
+}
+.log-design .nav-item {
+  font-weight: 600;
+}
+.log-design .nav-item:hover {
+  background: #2d2d2d;
+  color: #fff;
+}
+.log-design .nav-item.active {
+  background: #381b23;
+  color: #ffabbb;
+  box-shadow: inset 3px 0 var(--ws-primary);
+}
+.log-design .nav-count {
+  background: #393939;
+  color: #ddd;
+}
+.log-design .sidebar-help {
+  color: #b9bbc0;
+}
+.log-design .sidebar-help:hover {
+  color: #ffabbb;
+}
+.log-design .sidebar-signature {
+  border-color: #393939;
+}
+.log-design :is(.project-dot, .status-dot) {
+  background: #93969c;
+  box-shadow: none;
+}
+.log-design .topbar {
+  background: var(--ws-surface);
+  border-color: var(--ws-border);
+}
+.log-design :is(.breadcrumbs, .locale) {
+  color: var(--ws-muted);
+}
+.log-design .breadcrumbs strong {
+  color: var(--ws-text);
+  font-weight: 600;
+}
+.log-design :is(.locale span, .user-avatar) {
+  background: var(--ws-surface-soft);
+  color: var(--ws-secondary);
+  border-color: var(--ws-border);
+}
+.log-design .topbar-divider {
+  background: var(--ws-border);
+}
+.log-design .page-heading {
+  padding: 20px 22px;
+  border: 1px solid var(--ws-border);
+  border-radius: 12px;
+  background: var(--ws-surface);
+  box-shadow: 0 3px 12px rgb(56 41 31 / 4.5%);
+  margin-bottom: 20px;
+}
+.log-design h1 {
+  color: var(--ws-text);
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.5px;
+}
+.log-design .eyebrow {
+  color: var(--ws-accent-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.log-design .page-heading p {
+  color: var(--ws-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.65;
+}
+.log-design .phase-badge {
+  background: var(--ws-surface-soft);
+  border-color: var(--ws-border);
+  color: var(--ws-secondary);
+}
+.log-design :is(.connection-indicator, .connection-indicator.connected) {
+  color: var(--ws-accent-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.log-design :is(.connection-indicator i, .connection-indicator.connected i) {
+  background: var(--ws-accent);
+  box-shadow: none;
+}
+.log-design .connection-indicator.offline {
+  color: var(--ws-danger);
+}
+.log-design .connection-indicator.offline i {
+  background: var(--ws-danger);
+}
+.log-design .connection-banner {
+  background: var(--ws-accent-pale);
+  border-color: var(--ws-accent-border);
+  border-radius: var(--ws-radius);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+.log-design .banner-icon {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  width: 40px;
+  height: 40px;
+}
+.log-design .connection-banner strong {
+  color: var(--ws-text);
+  font-size: 15px;
+  font-weight: 650;
+}
+.log-design .connection-banner div > span {
+  color: var(--ws-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.log-design .connection-banner button {
+  color: var(--ws-accent-text);
+  min-height: var(--ws-control-height);
+  font-weight: 650;
+  font-size: 14px;
+}
+.log-design .connection-banner.offline {
+  background: var(--ws-danger-soft);
+  border-color: var(--ws-danger-border);
+}
+.log-design .connection-banner.offline :is(strong, .banner-icon, button) {
+  color: var(--ws-danger);
+}
+.log-design .connection-banner.offline .banner-icon {
+  background: var(--ws-danger-border);
+}
+
+/* Master panel hierarchy, comparison selection, and consistent form geometry. */
+.log-design .panel {
+  background: var(--ws-surface);
+  border-color: var(--ws-border);
+  border-radius: var(--ws-radius);
+  box-shadow: var(--ws-card-shadow);
+}
+.log-design .workspace-top {
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.log-design .panel-heading {
+  min-height: 68px;
+  padding: 12px 18px;
+  border-color: var(--ws-divider);
+  gap: 12px;
+}
+.log-design .panel h2 {
+  color: var(--ws-text);
+  font-size: 18px;
+  font-weight: 750;
+}
+.log-design .heading-label > svg {
+  box-sizing: content-box;
+  padding: 8px;
+  border-radius: 7px;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+}
+.log-design .button {
+  height: var(--ws-control-height);
+  padding: 0 16px;
+  border-radius: var(--ws-radius);
+  font-size: 15px;
+  font-weight: 650;
+}
+.log-design .button.primary {
+  background: var(--ws-primary);
+  color: #fff;
+  border-color: var(--ws-primary);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 22%),
+    0 2px 4px rgb(56 41 31 / 12%);
+}
+.log-design .button.primary:hover:not(:disabled) {
+  background: var(--ws-primary-hover);
+  border-color: var(--ws-primary-hover);
+}
+.log-design .button.secondary {
+  background: var(--ws-surface);
+  color: var(--ws-secondary);
+  border-color: var(--ws-border);
+  box-shadow: 0 1px 2px rgb(34 41 49 / 4%);
+}
+.log-design .button.secondary:hover:not(:disabled) {
+  background: var(--ws-primary-pale);
+  border-color: var(--ws-primary-border);
+  color: var(--ws-primary-text);
+}
+.log-design .button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.log-design .button:disabled {
+  color: #777f88;
+  background: #eceff2;
+  border-color: var(--ws-border);
+  box-shadow: none;
+}
+.log-design .button[aria-busy='true'] {
+  color: var(--ws-primary-text);
+  background: var(--ws-primary-soft);
+  cursor: progress;
+}
+.log-design :is(.text-button, .icon-button) {
+  color: var(--ws-secondary);
+  border-radius: var(--ws-radius);
+  font-size: 14px;
+  font-weight: 600;
+  min-height: var(--ws-control-height);
+}
+.log-design .icon-button {
+  width: var(--ws-control-height);
+  height: var(--ws-control-height);
+}
+.log-design :is(.text-button, .icon-button):hover:not(:disabled) {
+  background: var(--ws-primary-pale);
+  color: var(--ws-primary-text);
+}
+.log-design :is(.text-button, .icon-button):disabled {
+  color: #8a9199;
+  background: transparent;
+}
+.log-design .text-button {
+  padding: 0 8px;
+}
+.log-design .viewer-toolbar {
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  padding: 0 10px;
+  background: var(--ws-surface);
+  min-height: 54px;
+}
+.log-design .viewer-tab > button:first-child {
+  min-height: 52px;
+  padding: 12px;
+  color: var(--ws-secondary);
+  font-size: 15px;
+  font-weight: 650;
+}
+.log-design .viewer-tab:hover {
+  background: var(--ws-primary-pale);
+}
+.log-design .viewer-tab.active {
+  background: var(--ws-primary-pale);
+}
+.log-design .viewer-tab.active > button:first-child {
+  color: var(--ws-primary-text);
+}
+.log-design .viewer-tab.active:after {
+  height: 3px;
+  background: var(--ws-primary);
+}
+.log-design .close-tab {
+  color: var(--ws-muted);
+  padding: 8px;
+}
+.log-design .add-viewer {
+  color: var(--ws-primary-text);
+  min-width: 42px;
+  padding: 0;
+}
+.log-design .add-viewer:hover:not(:disabled) {
+  background: var(--ws-primary-soft);
+}
+.log-design .layout-controls {
+  gap: 4px;
+  padding: 0;
+}
+.log-design .layout-controls > span {
+  color: var(--ws-muted);
+}
+.log-design .layout-controls button {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  color: var(--ws-secondary);
+}
+.log-design .layout-controls button:hover {
+  background: var(--ws-primary-pale);
+}
+.log-design .layout-controls button.active {
+  background: var(--ws-primary-hover);
+  color: #fff;
+}
+.log-design .tiled-viewer-name {
+  color: var(--ws-primary-text);
+  font-weight: 650;
+}
+.log-design .search-panel form {
+  padding: 18px 18px 0;
+}
+.log-design .time-box {
+  padding: 14px;
+  background: var(--ws-surface-soft);
+  border-color: var(--ws-divider);
+  border-radius: var(--ws-radius);
+  margin-bottom: 18px;
+}
+.log-design .time-box-label {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.log-design .time-box-label strong {
+  color: var(--ws-secondary);
+  font-size: 14px;
+  font-weight: 650;
+}
+.log-design .time-box-label :is(svg, span, .retention) {
+  color: var(--ws-muted);
+  font-size: 13px;
+}
+.log-design .time-controls {
+  gap: 8px;
+}
+.log-design .time-controls > .select-field {
+  grid-column: 1 / -1;
+}
+.log-design .time-controls input {
+  font-size: 14px;
+  letter-spacing: -0.4px;
+}
+.log-design .range-separator {
+  color: var(--ws-muted);
+}
+.log-design .fields-grid {
+  gap: 16px 12px;
+}
+.log-design .field {
+  gap: 8px;
+}
+.log-design .field > span {
+  color: var(--ws-secondary);
+  font-size: 14px;
+  font-weight: 650;
+}
+.log-design .field small {
+  color: var(--ws-muted);
+  font-size: 13px;
+}
+.log-design .field :is(input, textarea) {
+  font-size: 16px;
+}
+.log-design .required-dot {
+  background: var(--ws-primary);
+}
+.log-design .field-hint {
+  color: var(--ws-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.log-design .advanced-toggle {
+  color: var(--ws-primary-text);
+  font-size: 14px;
+  font-weight: 650;
+  min-height: 42px;
+  border-radius: var(--ws-radius);
+  margin: 10px auto;
+}
+.log-design .advanced-toggle:hover {
+  background: var(--ws-primary-pale);
+}
+.log-design .search-bottom {
+  margin: 0 -18px;
+  padding: 14px 18px;
+  background: var(--ws-surface);
+  border-color: var(--ws-divider);
+  gap: 12px;
+}
+.log-design .check-label {
+  color: var(--ws-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.log-design .check-label > svg {
+  color: var(--ws-muted);
+}
+.log-design .search-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* WeshBoard comparison popup: trigger width, bounded scrolling, red selection.
+   Popover is in the top layer, so panel clipping and modal dialogs do not hide it. */
+.log-design .select-field {
+  min-width: 0;
+}
+.log-design .select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  height: var(--ws-control-height);
+  padding: 0 12px;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  font-size: 16px;
+  text-align: left;
+}
+.log-design .select-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.log-design .select-trigger > svg {
+  color: var(--ws-muted);
+}
+.log-design .select-trigger:hover:not(:disabled) {
+  border-color: #a9afb8;
+}
+.log-design .select-trigger[aria-expanded='true'] {
+  border-color: var(--ws-primary);
+  box-shadow: 0 0 0 3px var(--ws-primary-soft);
+}
+.log-design .select-trigger[aria-expanded='true'] > svg {
+  color: var(--ws-primary-text);
+  transform: rotate(180deg);
+}
+.log-design .select-trigger:disabled {
+  background: #f0f2f4;
+  color: #7b8189;
+  border-color: #e1e4e8;
+}
+.log-design .select-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 5px;
+  max-height: 224px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  box-shadow: var(--ws-popup-shadow);
+}
+.log-design .select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 15px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.log-design .select-option > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.log-design .select-option-check {
+  display: flex;
+  flex: 0 0 16px;
+  color: var(--ws-primary-text);
+}
+.log-design .select-option.is-active {
+  background: var(--ws-primary-soft);
+}
+.log-design .select-option[aria-selected='true'] {
+  color: var(--ws-primary-text);
+  font-weight: 700;
+}
+
+/* WeshAssistant's readable message hierarchy and contained answer/table surfaces. */
+.log-design .detail-tabs {
+  padding: 0 10px;
+  border-color: var(--ws-divider);
+}
+.log-design .detail-tabs button {
+  color: var(--ws-secondary);
+  font-size: 14px;
+  font-weight: 650;
+  min-height: 64px;
+}
+.log-design .detail-tabs button:hover {
+  background: var(--ws-primary-pale);
+}
+.log-design .detail-tabs button[aria-selected='true'] {
+  color: var(--ws-primary-text);
+  background: var(--ws-primary-pale);
+}
+.log-design .detail-tabs button[aria-selected='true']:after {
+  background: var(--ws-primary);
+  height: 3px;
+}
+.log-design .detail-toolbar {
+  height: auto;
+  min-height: 66px;
+  padding: 10px 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--ws-surface-soft);
+  border-color: var(--ws-divider);
+}
+.log-design .detail-file {
+  font-size: 14px;
+  color: var(--ws-secondary);
+}
+.log-design .detail-toolbar .select-field {
+  width: 98px;
+}
+.log-design .detail-toolbar .select-trigger {
+  font-size: 14px;
+}
+.log-design .detail-toolbar .button-group {
+  gap: 4px;
+}
+.log-design .detail-empty {
+  background: #fafbfc;
+  padding: 28px 18px;
+  text-align: center;
+}
+.log-design :is(.code-symbol, .empty-illustration) {
+  background: var(--ws-accent-pale);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.log-design .empty-illustration > span {
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+.log-design :is(.detail-empty h3, .results-empty h3) {
+  color: var(--ws-text);
+  font-size: 17px;
+  font-weight: 650;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.log-design :is(.detail-empty p, .results-empty p) {
+  color: var(--ws-secondary);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.log-design .format-chips span {
+  font-size: 13px;
+  background: var(--ws-surface);
+  border-color: var(--ws-border);
+  color: var(--ws-muted);
+}
+.log-design .message-scroll {
+  padding: 18px;
+  background: #fafbfc;
+}
+.log-design .message-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ws-text);
+  padding: 16px;
+  background: var(--ws-surface-soft);
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.log-design :is(.key-value-table, .transaction-content) {
+  color: var(--ws-text);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.log-design .key-value-table :is(th, td) {
+  padding: 10px 12px;
+  border-color: var(--ws-border);
+  overflow-wrap: anywhere;
+}
+.log-design .key-value-table th {
+  background: var(--ws-surface-soft);
+  color: var(--ws-secondary);
+  font-weight: 700;
+}
+.log-design .key-value-empty {
+  color: var(--ws-muted);
+}
+.log-design .transaction-content article {
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface-soft);
+}
+.log-design .transaction-content time {
+  color: var(--ws-muted);
+  font-size: 14px;
+}
+.log-design .transaction-content pre {
+  font-size: 15px;
+  line-height: 1.7;
+}
+.log-design .transaction-id {
+  background: var(--ws-primary-pale);
+  color: var(--ws-primary-text);
+  border-color: var(--ws-primary-border);
+}
+.log-design .detail-footer {
+  min-height: 58px;
+  padding: 8px 16px;
+  background: var(--ws-surface);
+  border-color: var(--ws-divider);
+}
+.log-design .detail-footer > span {
+  color: var(--ws-muted);
+  font-size: 13px;
+}
+
+/* Results keep their existing transaction/value highlight semantics. */
+.log-design .results-panel .panel-heading {
+  min-height: 68px;
+}
+.log-design :is(.count-badge, .subtle-tag) {
+  background: var(--ws-surface-soft);
+  color: var(--ws-secondary);
+  border-color: var(--ws-border);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .table-legend {
+  color: var(--ws-muted);
+  font-size: 13px;
+}
+.log-design .table-find {
+  height: 42px;
+  background: var(--ws-surface);
+  border-color: var(--ws-border);
+  border-radius: var(--ws-radius);
+  color: var(--ws-muted);
+}
+.log-design .table-find:focus-within {
+  border-color: var(--ws-primary);
+  box-shadow: 0 0 0 3px var(--ws-primary-soft);
+}
+.log-design .table-find input {
+  height: 38px !important;
+  font-size: 14px;
+  box-shadow: none;
+  border: 0;
+}
+.log-design .log-table th {
+  height: 46px;
+  background: var(--ws-surface-soft);
+  color: var(--ws-secondary);
+  font-size: 14px;
+  font-weight: 650;
+  border-color: var(--ws-divider);
+}
+.log-design .log-table td {
+  border-color: var(--ws-divider);
+  color: var(--ws-text);
+  height: 44px;
+}
+.log-design .cell-button {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.log-design .log-table .number-column {
+  color: var(--ws-muted);
+}
+.log-design .log-table tr:hover td {
+  background: #ea002c0a;
+}
+.log-design .selected-row {
+  box-shadow: inset 3px 0 var(--ws-primary);
+}
+.log-design .selected-row:not(.related-row) {
+  background: var(--ws-primary-pale);
+}
+.log-design .results-empty {
+  background: var(--ws-surface);
+}
+.log-design .empty-source {
+  font-size: 13px;
+  color: var(--ws-muted);
+  border-color: var(--ws-border);
+  background: var(--ws-surface-soft);
+}
+.log-design :is(.empty-source i, .footer-dot) {
+  background: #949aa3;
+}
+.log-design .table-footer {
+  padding: 12px 16px;
+  min-height: 66px;
+  border-color: var(--ws-divider);
+}
+.log-design .page-size {
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+.log-design .page-size .select-field {
+  width: 136px;
+}
+.log-design .page-size .select-trigger {
+  font-size: 14px;
+}
+.log-design .current-page {
+  width: 42px;
+  height: 42px;
+  color: var(--ws-primary-text);
+  border-color: var(--ws-primary-border);
+  background: var(--ws-primary-pale);
+  font-size: 15px;
+  font-weight: 700;
+}
+.log-design .query-duration {
+  color: var(--ws-muted);
+  font-size: 14px;
+}
+.log-design .query-duration strong {
+  color: var(--ws-text);
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .page-footer {
+  color: var(--ws-muted);
+  font-size: 13px;
+}
+
+/* Viewer dialogs, errors, menus and feedback share the same visual rules. */
+.log-design .error-alert {
+  background: var(--ws-danger-soft);
+  color: var(--ws-danger);
+  border-color: var(--ws-danger-border);
+  border-radius: var(--ws-radius);
+}
+.log-design .inline-error {
+  color: var(--ws-danger);
+  font-size: 14px;
+}
+.log-design .alert {
+  align-items: flex-start;
+  font-size: 15px;
+  padding: 14px 16px;
+}
+.log-design .alert > svg {
+  margin-top: 4px;
+}
+.log-design .dialog {
+  color: var(--ws-text);
+  border-color: var(--ws-border);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgb(34 41 49 / 22%);
+}
+.log-design .dialog::backdrop {
+  background: rgb(25 29 35 / 38%);
+}
+.log-design :is(.dialog-heading, .dialog-footer) {
+  border-color: var(--ws-divider);
+  padding: 16px 20px;
+}
+.log-design .dialog-heading h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.log-design .dialog-description {
+  color: var(--ws-secondary);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.log-design .dialog-footer {
+  background: var(--ws-surface-soft);
+}
+.log-design :is(.export-range, .info-note) {
+  background: var(--ws-surface-soft);
+  border-color: var(--ws-border);
+  color: var(--ws-secondary);
+  border-radius: var(--ws-radius);
+  overflow-wrap: anywhere;
+}
+.log-design :is(.export-range > span, .form-label) {
+  color: var(--ws-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.log-design .export-range strong {
+  font-size: 14px;
+  color: var(--ws-text);
+}
+.log-design .format-options label {
+  border-color: var(--ws-border);
+  border-radius: var(--ws-radius);
+  color: var(--ws-secondary);
+}
+.log-design .format-options label:hover {
+  background: var(--ws-primary-pale);
+}
+.log-design .format-options label.checked {
+  border-color: var(--ws-primary);
+  background: var(--ws-primary-soft);
+  color: var(--ws-primary-text);
+}
+.log-design .format-options label:focus-within {
+  outline: 2px solid var(--ws-primary);
+  outline-offset: 2px;
+}
+.log-design .format-options strong {
+  color: var(--ws-text);
+  font-weight: 650;
+}
+.log-design .format-options span {
+  color: var(--ws-secondary);
+  font-size: 13px;
+}
+.log-design .help-body svg {
+  color: var(--ws-primary-text);
+}
+.log-design .help-body p {
+  color: var(--ws-secondary);
+}
+.log-design .toast {
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  border-color: var(--ws-border);
+  box-shadow: var(--ws-popup-shadow);
+}
+.log-design .toast > svg {
+  color: var(--ws-primary-text);
+}
+.log-design .context-menu {
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  border-color: var(--ws-border);
+  box-shadow: var(--ws-popup-shadow);
+  border-radius: var(--ws-radius);
+  max-width: calc(100vw - 24px);
+}
+.log-design .context-menu button:hover {
+  background: var(--ws-primary-soft);
+  color: var(--ws-primary-text);
+}
+.log-design .is-spinning {
+  animation: log-design-spin 1s linear infinite;
+}
+@keyframes log-design-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1500px) {
+  .log-design .table-legend {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .log-design .layout-horizontal .workspace-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .log-design .detail-toolbar {
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 600px) {
+  .log-design .page-heading {
+    padding: 16px;
+    gap: 8px;
+  }
+  .log-design h1 {
+    font-size: 25px;
+    overflow-wrap: anywhere;
+  }
+  .log-design .page-heading p {
+    font-size: 14px;
+  }
+  .log-design .button.new-window {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    font-size: 0;
+    margin-top: 0;
+  }
+  .log-design .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+  }
+  .log-design .panel-heading {
+    padding: 12px;
+    gap: 8px;
+  }
+  .log-design .panel h2 {
+    font-size: 17px;
+  }
+  .log-design .heading-label > svg {
+    padding: 6px;
+  }
+  .log-design .search-panel form {
+    padding: 14px 12px 0;
+  }
+  .log-design .search-bottom {
+    margin: 0 -12px;
+    padding: 12px;
+  }
+  .log-design .time-box {
+    padding: 10px;
+  }
+  .log-design .time-controls input {
+    font-size: 14px;
+  }
+  .log-design .field-hint {
+    font-size: 14px;
+  }
+  .log-design .button {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+  .log-design .connection-banner {
+    padding: 14px 12px;
+  }
+  .log-design .connection-banner > div {
+    min-width: 130px;
+  }
+  .log-design .viewer-toolbar {
+    padding: 0 4px;
+  }
+  .log-design .viewer-tabs {
+    min-width: 0;
+  }
+  .log-design .viewer-tab > button:first-child {
+    padding: 12px 8px;
+  }
+  .log-design .detail-tabs {
+    padding: 0 4px;
+  }
+  .log-design .detail-tabs button {
+    min-height: 48px;
+  }
+  .log-design .detail-toolbar {
+    padding: 10px 12px;
+  }
+  .log-design .detail-footer {
+    padding: 10px 12px;
+  }
+  .log-design .table-footer {
+    padding: 12px;
+  }
+  .log-design .table-find input {
+    width: 116px;
+  }
+  .log-design .table-footer .select-field {
+    width: 126px;
+  }
+  .log-design .table-footer .pagination {
+    gap: 2px;
+  }
+  .log-design .table-footer .pagination .icon-button {
+    width: 34px;
+  }
+  .log-design .current-page {
+    width: 34px;
+  }
+  .log-design .query-duration {
+    margin-left: auto;
+  }
+  .log-design .page-footer {
+    font-size: 12px;
+  }
+  .log-design .toast {
+    left: 50%;
+  }
+  .log-design .dialog-body {
+    padding: 18px;
+  }
+}
+@media (max-width: 380px) {
+  .log-design .fields-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .log-design .field-wide {
+    grid-column: auto;
+  }
+  .log-design .detail-toolbar .button-group {
+    flex-wrap: wrap;
+  }
+  .log-design .format-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .log-design .is-spinning {
+    animation: none;
+  }
+  .log-design :is(button, input, textarea) {
+    transition: none;
+  }
+}
+
+/* The active local source is always labelled separately from production data. */
+.log-design .dummy-source-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  background: var(--ws-accent-pale);
+  border: 1px solid var(--ws-accent-border);
+  border-radius: var(--ws-radius);
+  color: var(--ws-accent-text);
+}
+.log-design .dummy-source-banner > svg {
+  flex-shrink: 0;
+}
+.log-design .dummy-source-banner > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.log-design .dummy-source-banner strong {
+  font-size: 16px;
+  font-weight: 650;
+}
+.log-design .dummy-source-banner span {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ws-secondary);
+  overflow-wrap: anywhere;
+}
+.log-design .dummy-source-banner .button {
+  flex-shrink: 0;
+}
+@media (max-width: 720px) {
+  .log-design .dummy-source-banner {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  .log-design .dummy-source-banner > div {
+    flex-basis: calc(100% - 40px);
+  }
+  .log-design .dummy-source-banner .button {
+    width: 100%;
+  }
+}

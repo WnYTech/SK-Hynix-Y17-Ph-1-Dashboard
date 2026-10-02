@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+test-results/
+playwright-report/
+*.log
+.DS_Store
+
+# Generated local log dataset (regenerate using backend.app.dummy_data)
+backend/data/

@@ -1,0 +1,21 @@
+{
+  "name": "y17-log-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "typecheck": "npm run typecheck --workspace frontend",
+    "test:ui": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "data:generate": "python3 -m backend.app.dummy_data"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "prettier": "^3.9.9"
+  }
+}

@@ -1712,12 +1712,12 @@
   margin-top: 14px;
   padding-top: 14px;
 }
-.log-design .calendar-time label {
+.log-design .calendar-time-field {
   display: grid;
   min-width: 0;
   gap: 5px;
 }
-.log-design .calendar-time label > span {
+.log-design .calendar-time-field > label {
   font-size: 14px;
   font-weight: 600;
 }
@@ -1725,10 +1725,10 @@
   font-size: 13px;
   color: var(--ws-muted);
 }
-.log-design .calendar-time input {
+.log-design .calendar-time input[type='text'] {
   width: 100%;
   min-width: 0;
-  padding: 0 6px;
+  padding: 0 4px;
   font-size: 16px;
   text-align: center;
   letter-spacing: normal;
@@ -1771,11 +1771,60 @@
   font-size: 13px;
   color: var(--ws-muted);
 }
-@media (max-width: 360px) {
-  .log-design .calendar-time {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .log-design .calendar-time .nano-field {
-    grid-column: 1 / -1;
+.log-design .calendar-wheel-hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--ws-secondary);
+  line-height: 1.6;
+}
+.log-design .time-wheel {
+  position: relative;
+  height: 92px;
+  overflow: hidden;
+  border: 1px solid var(--ws-border);
+  border-radius: 6px;
+  background: var(--ws-surface-soft);
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.log-design .time-wheel:active {
+  cursor: grabbing;
+}
+.log-design .time-wheel:focus-visible {
+  outline: 2px solid var(--ws-primary);
+  outline-offset: 2px;
+}
+.log-design .time-wheel::before {
+  content: '';
+  position: absolute;
+  inset: 30px 0 auto;
+  height: 30px;
+  background: var(--ws-primary-soft);
+  border-block: 1px solid var(--ws-primary-border);
+  pointer-events: none;
+}
+.log-design .time-wheel-values {
+  position: relative;
+  pointer-events: none;
+}
+.log-design .time-wheel-values > span {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  font-size: 14px;
+  color: var(--ws-muted);
+  font-variant-numeric: tabular-nums;
+}
+.log-design .time-wheel-values > .wheel-selected {
+  font-weight: 650;
+  color: var(--ws-primary-text);
+}
+.log-design .time-wheel.is-snapping .time-wheel-values {
+  transition: transform 100ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .log-design .time-wheel.is-snapping .time-wheel-values {
+    transition: none;
   }
 }

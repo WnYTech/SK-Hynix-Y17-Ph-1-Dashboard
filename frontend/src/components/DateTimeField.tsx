@@ -1,6 +1,7 @@
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { formatDate, parseDate } from '../lib/conditions';
+import TimeWheel from './TimeWheel';
 
 type Parts = { date: string; hour: string; minute: string; second: string; nano: string };
 const pad = (value: string | number, width = 2) => String(value).padStart(width, '0');
@@ -207,6 +208,9 @@ export default function DateTimeField({
             );
           })}
         </div>
+        <p className="calendar-wheel-hint">
+          휠·위아래 드래그로 선택하거나 아래 칸에 직접 입력하세요.
+        </p>
         <div className="calendar-time" role="group" aria-label="시·분·초·나노초 입력">
           {(
             [
@@ -216,9 +220,19 @@ export default function DateTimeField({
               ['nano', '나노초 (ns)', '9자리', 9, 999999999],
             ] as const
           ).map(([key, title, hint, digits, max]) => (
-            <label key={key} className={key === 'nano' ? 'nano-field' : ''}>
-              <span>{title}</span>
+            <div key={key} className="calendar-time-field">
+              <label htmlFor={`${id}-${key}`}>{title}</label>
+              {open && (
+                <TimeWheel
+                  label={`${label} ${title}`}
+                  value={parts[key]}
+                  max={max}
+                  digits={digits}
+                  onChange={(value) => update({ ...parts, [key]: value })}
+                />
+              )}
               <input
+                id={`${id}-${key}`}
                 type="text"
                 inputMode="numeric"
                 autoComplete="off"
@@ -240,7 +254,7 @@ export default function DateTimeField({
                 }}
               />
               <small>{hint}</small>
-            </label>
+            </div>
           ))}
         </div>
         {invalid && (

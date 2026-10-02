@@ -62,6 +62,10 @@ python3 -m pip install -r backend/requirements-dev.txt
 
 더미 데이터로 서버 검색·커서 페이지 이동·선택 행/값 강조·S/E/G 상세 및 ARC 교차 시스템 연관검색을 확인할 수 있습니다. 실제 Elasticsearch 연결과 운영 성능 검증은 후속 작업입니다.
 
+## 도메인 / 리버스 프록시
+
+nginx 설정안과 적용 명령은 [리버스 프록시 배포](docs/reverse-proxy.md)를 참고하세요. `python3 app.py --production --host 192.168.200.254 --proxy-ips 192.168.100.116`은 React 빌드와 API를 8017 포트에서 함께 제공합니다. 먼저 `npm run build`를 실행하고 기존 8017 API는 사용자가 직접 종료한 뒤 실행합니다. `--production`에서는 자동 리로드가 꺼지며, 화면 수정 후 다시 빌드하고 서버를 재시작합니다.
+
 ## 더미 데이터
 
 현재 로컬 파일은 `backend/data/dummy-logs.sqlite3`이며, 총 **3,000,000행 / 약 1.56GiB**입니다. 생성 당시 최근 6일에 걸친 고정 시각을 사용합니다. 두 화면이 같은 300만 건을 공유하며, 프로그램마다 별도로 300만 건을 복제하지 않습니다.

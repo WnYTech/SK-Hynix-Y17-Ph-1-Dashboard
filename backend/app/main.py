@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
@@ -78,3 +81,10 @@ async def create_export(body: ExportRequest, repository: Repository):
 @app.get("/api/exports/{job_id}", response_model=ExportJob, tags=["exports"])
 async def export_status(job_id: str, repository: Repository):
     return await repository.export_status(job_id)
+
+
+# Register last so /api routes remain handled by FastAPI. The UI uses hash routes,
+# so StaticFiles(html=True) is sufficient; unknown files still return 404.
+if os.environ.get("Y17_SERVE_FRONTEND") == "1":
+    from .frontend import mount_frontend
+    mount_frontend(app, Path(__file__).resolve().parents[2] / "frontend" / "dist")

@@ -14,6 +14,7 @@ import type { Conditions, Fields, Metadata } from '../types';
 import { emptyFields, presetRange, timePresets } from '../lib/conditions';
 import { programs } from '../lib/programs';
 import SelectField from './SelectField';
+import DateTimeField from './DateTimeField';
 
 interface Props {
   conditions: Conditions;
@@ -116,20 +117,16 @@ export default function SearchPanel({
               }
               options={timePresets.map(([value, label]) => ({ value, label }))}
             />
-            <input
-              aria-label="시작 시간"
+            <DateTimeField
+              label="시작 시간"
               value={c.start}
-              onChange={(e) => onChange({ ...c, start: e.target.value, preset: 'custom' })}
-              placeholder="YYYY-MM-DD HH:mm:ss"
-              spellCheck={false}
+              onChange={(value) => onChange({ ...c, start: value, preset: 'custom' })}
             />
             <span className="range-separator">→</span>
-            <input
-              aria-label="종료 시간"
+            <DateTimeField
+              label="종료 시간"
               value={c.end}
-              onChange={(e) => onChange({ ...c, end: e.target.value, preset: 'custom' })}
-              placeholder="YYYY-MM-DD HH:mm:ss"
-              spellCheck={false}
+              onChange={(value) => onChange({ ...c, end: value, preset: 'custom' })}
             />
           </div>
         </div>

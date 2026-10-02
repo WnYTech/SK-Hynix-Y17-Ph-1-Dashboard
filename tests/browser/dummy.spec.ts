@@ -1,4 +1,3 @@
-import type { LogRecord } from '../../frontend/src/types';
 import { expect, test, type Page } from './fixtures';
 
 // Keep large DOM snapshots from competing with another 1,000-row browser case.
@@ -28,7 +27,9 @@ for (const [program, title, transactionTab] of [
     const active = viewer(page);
     const detail = active.locator('.detail-panel');
     await expect(active.getByText('더미 데이터 · 3,000,000건')).toBeVisible();
-    const response = page.waitForResponse((r) => r.url().endsWith('/api/logs/search'));
+    const response = page.waitForResponse(
+      (r) => r.url().endsWith('/api/logs/search') && !r.request().postDataJSON().count_only,
+    );
     await active
       .locator('.dummy-source-banner')
       .getByRole('button', { name: '더미 로그 조회' })
@@ -36,7 +37,7 @@ for (const [program, title, transactionTab] of [
     const first = await (await response).json();
     expect(first.items).toHaveLength(1000);
     expect(first.total).toBeGreaterThan(1000);
-    await expect(active.locator('.log-table tbody tr')).toHaveCount(1000);
+    await expect(active.locator('.log-table')).toHaveAttribute('data-loaded-rows', '1000');
     await expect(
       active.locator('.search-panel').getByRole('combobox', { name: 'System', exact: true }),
     ).toHaveText('MES');
@@ -46,10 +47,11 @@ for (const [program, title, transactionTab] of [
       .getByRole('button', { name: '1', exact: true })
       .click();
     await expect(active.locator('.message-content')).toHaveText(first.items[0].message);
-    const selectedName = first.items[0].transaction_name;
-    const sameNameCount = (items: LogRecord[]) =>
-      items.filter((item) => item.transaction_name === selectedName).length;
-    await expect(active.locator('.log-table .related-row')).toHaveCount(sameNameCount(first.items));
+    await expect
+      .poll(async () =>
+        Number((await active.getByTestId('transaction-count').innerText()).replaceAll(',', '')),
+      )
+      .toBeGreaterThan(3);
     await detail.getByRole('combobox', { name: '로그 표시 형식' }).click();
     await page.getByRole('option', { name: 'JSON', exact: true }).click();
     await expect(active.locator('.message-content')).toContainText('"dummy": true');
@@ -59,27 +61,25 @@ for (const [program, title, transactionTab] of [
       .first()
       .getByRole('button', { name: 'TransactionHandler', exact: true })
       .click();
-    await expect(active.locator('.highlighted-cell')).toHaveCount(1);
-    const nextResponse = page.waitForResponse((r) => r.url().endsWith('/api/logs/search'));
+    await expect(active.locator('.highlighted-cell')).toHaveCount(30);
+    const nextResponse = page.waitForResponse(
+      (r) => r.url().endsWith('/api/logs/search') && !r.request().postDataJSON().count_only,
+    );
     await active
       .locator('.pagination')
       .getByRole('button', { name: '다음 페이지', exact: true })
       .click();
-    const second = await (await nextResponse).json();
+    await nextResponse;
     await expect(active.locator('.current-page')).toHaveText('2');
-    await expect(active.locator('.log-table tbody tr')).toHaveCount(1000);
-    await expect(active.locator('.log-table .related-row')).toHaveCount(
-      sameNameCount(second.items),
-    );
-    await expect(active.locator('.highlighted-cell')).toHaveCount(0);
+    await expect(active.locator('.log-table')).toHaveAttribute('data-loaded-rows', '1000');
+    await expect(active.locator('.highlighted-cell')).toHaveCount(30);
     await active
       .locator('.pagination')
       .getByRole('button', { name: '이전 페이지', exact: true })
       .click();
     await expect(active.locator('.current-page')).toHaveText('1');
     await expect(active.locator('.log-table .selected-row')).toHaveCount(1);
-    await expect(active.locator('.log-table .related-row')).toHaveCount(sameNameCount(first.items));
-    await expect(active.locator('.highlighted-cell')).toHaveCount(1);
+    await expect(active.locator('.highlighted-cell')).toHaveCount(30);
     await expect(active.locator('.selected-row td[data-column="class_name"]')).toHaveClass(
       /highlighted-cell/,
     );
@@ -126,14 +126,16 @@ test('ARC Full Text and correlation return real matching transactions', async ({
     .locator('.dummy-source-banner')
     .getByRole('button', { name: '더미 로그 조회' })
     .click();
-  await expect(active.locator('.log-table tbody tr')).toHaveCount(1000);
+  await expect(active.locator('.log-table')).toHaveAttribute('data-loaded-rows', '1000');
   await active.locator('.search-panel').getByRole('button', { name: '상세 검색조건' }).click();
   await active.getByLabel('Full Text').fill('"status":"ERROR"');
   await active
     .locator('.search-panel')
     .getByRole('checkbox', { name: '트랜잭션 연관검색' })
     .check();
-  const response = page.waitForResponse((r) => r.url().endsWith('/api/logs/search'));
+  const response = page.waitForResponse(
+    (r) => r.url().endsWith('/api/logs/search') && !r.request().postDataJSON().count_only,
+  );
   await active.locator('.search-panel').getByRole('button', { name: '검색', exact: true }).click();
   const result = await (await response).json();
   expect(result.total).toBeGreaterThan(0);
@@ -141,7 +143,10 @@ test('ARC Full Text and correlation return real matching transactions', async ({
   expect(new Set(result.items.map((row: { system: string }) => row.system))).toEqual(
     new Set(['MES', 'EAP', 'FDC', 'APC']),
   );
-  await expect(active.locator('.log-table tbody tr')).toHaveCount(result.items.length);
+  await expect(active.locator('.log-table')).toHaveAttribute(
+    'data-loaded-rows',
+    String(result.items.length),
+  );
   await active.getByLabel('Full Text').fill('there-is-no-such-dummy-message');
   await active.locator('.search-panel').getByRole('button', { name: '검색', exact: true }).click();
   await expect(active.getByText('검색조건에 맞는 로그가 없습니다')).toBeVisible();

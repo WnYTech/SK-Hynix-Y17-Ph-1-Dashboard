@@ -22,7 +22,9 @@ export const emptyFields: Fields = {
 };
 
 export const timePresets = [
+  ['5m', '최근 5분'],
   ['15m', '최근 15분'],
+  ['30m', '최근 30분'],
   ['1h', '최근 1시간'],
   ['6h', '최근 6시간'],
   ['24h', '최근 24시간'],
@@ -40,7 +42,9 @@ export function formatDate(value: string | Date): string {
 export function presetRange(preset: string) {
   const end = new Date();
   const durations: Record<string, number> = {
+    '5m': 5 * 60000,
     '15m': 15 * 60000,
+    '30m': 30 * 60000,
     '1h': 3600000,
     '6h': 6 * 3600000,
     '24h': 24 * 3600000,

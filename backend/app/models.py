@@ -52,6 +52,46 @@ class Filters(Contract):
         return self
 
 
+LogColumn = Literal[
+    "datetime", "system", "process", "server", "sequence", "log_type", "transaction_name",
+    "class_name", "transaction_key", "global_transaction_id", "global_transaction_sequence",
+    "event_transaction_id", "service_transaction_id", "lot", "eqp", "elapsed_ms", "message",
+]
+
+
+class Sort(Contract):
+    field: LogColumn = "datetime"
+    direction: Literal["asc", "desc"] = "desc"
+
+
+class Highlight(Contract):
+    # Cell text must retain whitespace for exact equality with the stored value.
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    transaction_name: str = Field(default="", max_length=10000)
+    column: LogColumn | None = None
+    value: str | float | None = Field(default=None)
+
+    @model_validator(mode="after")
+    def validate_value(self):
+        self.transaction_name = self.transaction_name.strip()
+        if self.column == "datetime":
+            try:
+                value = datetime.fromisoformat(str(self.value).replace("Z", "+00:00"))
+                if value.tzinfo is None:
+                    raise ValueError
+            except (ValueError, TypeError):
+                raise ValueError("강조할 로그 시각을 확인해 주세요.") from None
+        if self.column == "elapsed_ms" and self.value is not None:
+            import math
+            try:
+                self.value = float(self.value)
+                if not math.isfinite(self.value):
+                    raise ValueError
+            except (ValueError, TypeError):
+                raise ValueError("강조할 소요 시간을 확인해 주세요.") from None
+        return self
+
+
 class SearchRequest(Contract):
     program: Literal["acell", "arc"] = "acell"
     time_range: TimeRange
@@ -59,6 +99,11 @@ class SearchRequest(Contract):
     correlate: bool = False
     page_size: int = Field(default=1000, ge=1, le=1000)
     cursor: str | None = Field(default=None, max_length=8192)
+    page: int | None = Field(default=None, ge=1, le=10000000)
+    sort: Sort = Field(default_factory=Sort)
+    highlight: Highlight = Field(default_factory=Highlight)
+    highlight_mode: Literal["all", "transaction", "cell", "any"] = "all"
+    count_only: bool = False
 
     @model_validator(mode="after")
     def require_transaction_for_all_systems(self):
@@ -81,6 +126,7 @@ class SearchRequest(Contract):
 
 
 class LogRecord(Contract):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     id: str
     datetime: AwareDatetime
     system: str = ""
@@ -107,6 +153,10 @@ class SearchResponse(Contract):
     current_cursor: str | None = None
     total: int | None = None
     took_ms: float
+    page: int = 1
+    total_pages: int = 0
+    base_total: int | None = None
+    highlight_counts: dict[str, int] | None = None
 
 
 class ExportRequest(Contract):

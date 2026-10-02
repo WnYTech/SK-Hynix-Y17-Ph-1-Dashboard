@@ -60,7 +60,24 @@ export interface SearchRequest {
   correlate: boolean;
   page_size: number;
   cursor: string | null;
+  page?: number;
+  sort?: Sort;
+  highlight?: Highlight;
+  highlight_mode?: HighlightMode;
+  count_only?: boolean;
 }
+export type LogColumn = Exclude<keyof LogRecord, 'id'>;
+export interface Sort {
+  field: LogColumn;
+  direction: 'asc' | 'desc';
+}
+export interface Highlight {
+  transaction_name: string;
+  column: LogColumn | null;
+  value: string | number | null;
+}
+export type HighlightMode = 'all' | 'transaction' | 'cell' | 'any';
+export type HighlightCounts = Record<'transaction' | 'cell' | 'any', number>;
 export interface LogRecord {
   id: string;
   datetime: string;
@@ -87,6 +104,10 @@ export interface SearchResponse {
   current_cursor?: string | null;
   total: number | null;
   took_ms: number;
+  page?: number;
+  total_pages?: number;
+  base_total?: number;
+  highlight_counts?: HighlightCounts;
 }
 export interface SavedCondition {
   id: string;

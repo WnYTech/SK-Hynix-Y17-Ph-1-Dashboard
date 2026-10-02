@@ -32,7 +32,7 @@ export default function Dialog({
     >
       <div className="dialog-heading">
         <h2>{title}</h2>
-        <button className="icon-button" aria-label="닫기" onClick={onClose}>
+        <button type="button" className="icon-button" aria-label="닫기" onClick={onClose}>
           <X size={19} />
         </button>
       </div>

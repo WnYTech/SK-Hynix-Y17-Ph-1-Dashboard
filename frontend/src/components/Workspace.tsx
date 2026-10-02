@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Database, FileDown, Info, Search, X } from 'lucide-react';
 import type {
   Conditions,
+  Highlight,
+  HighlightCounts,
+  HighlightMode,
+  LogColumn,
+  Sort,
   DownloadJob,
   LogRecord,
   Metadata,
@@ -12,7 +17,7 @@ import type {
 } from '../types';
 import { api } from '../lib/api';
 import { formatDate, initialConditions, toRequest } from '../lib/conditions';
-import { transactionIdentity } from '../lib/transactions';
+import { transactionHighlightName } from '../lib/transactions';
 import { programs } from '../lib/programs';
 import SearchPanel from './SearchPanel';
 import ResultsPanel from './ResultsPanel';
@@ -49,9 +54,27 @@ export default function Workspace({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<LogRecord | null>(null);
-  const [highlighted, setHighlighted] = useState('');
+  const [highlightedColumn, setHighlightedColumn] = useState<LogColumn | null>(null);
   const [page, setPage] = useState(1);
-  const [cursors, setCursors] = useState<(string | null)[]>([null]);
+  const [sort, setSort] = useState<Sort>({ field: 'datetime', direction: 'desc' });
+  const [highlightMode, setHighlightMode] = useState<HighlightMode>('all');
+  const [counts, setCounts] = useState<HighlightCounts>({ transaction: 0, cell: 0, any: 0 });
+  const [countLoading, setCountLoading] = useState(false);
+  const [countError, setCountError] = useState('');
+  const cursors = useRef(new Map<number, string>());
+  const pageCache = useRef(new Map<number, { result: SearchResponse; at: number }>());
+  const queryKey = useRef('');
+  const queryStartedAt = useRef(0);
+  const countSnapshot = useRef<{ cursor: string | null; sort: Sort } | null>(null);
+  const highlight = useMemo<Highlight>(
+    () => ({
+      transaction_name: selected ? transactionHighlightName(selected) : '',
+      row_id: selected?.id ?? null,
+      column: highlightedColumn,
+      value: selected && highlightedColumn ? selected[highlightedColumn] : null,
+    }),
+    [selected, highlightedColumn],
+  );
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState('csv');
   const [exporting, setExporting] = useState(false);
@@ -68,46 +91,162 @@ export default function Workspace({
     setResult(null);
     setSearch(null);
     setPage(1);
-    setCursors([null]);
+    cursors.current.clear();
+    pageCache.current.clear();
+    countSnapshot.current = null;
+    setHighlightMode('all');
+    setCounts({ transaction: 0, cell: 0, any: 0 });
     setSelected(null);
-    setHighlighted('');
+    setHighlightedColumn(null);
   };
-  const runSearch = async (nextPage = 1, paginate = false, override?: Conditions) => {
-    let body: SearchRequest;
-    try {
-      body = !paginate
-        ? toRequest(override ?? conditions)
-        : { ...search!, cursor: nextPage > page ? result!.next_cursor : cursors[nextPage - 1] };
-    } catch (err) {
-      setError((err as Error).message);
-      return;
+  const requestRows = async (
+    base: SearchRequest,
+    target: number,
+    options: {
+      sort?: Sort;
+      mode?: HighlightMode;
+      highlight?: Highlight;
+      size?: number;
+      fresh?: boolean;
+    } = {},
+  ) => {
+    const nextSort = options.sort ?? sort;
+    const nextMode = options.mode ?? highlightMode;
+    const nextHighlight = options.highlight ?? highlight;
+    const size = options.size ?? base.page_size;
+    const key = JSON.stringify({
+      ...base,
+      page_size: size,
+      sort: nextSort,
+      highlight_mode: nextMode,
+      highlight: nextMode === 'all' ? null : nextHighlight,
+    });
+    if (options.fresh || queryKey.current !== key) {
+      cursors.current.clear();
+      pageCache.current.clear();
+      queryKey.current = key;
+      queryStartedAt.current = Date.now();
     }
     controller.current?.abort();
-    const requestController = new AbortController();
-    controller.current = requestController;
+    const active = new AbortController();
+    controller.current = active;
     setError('');
     setLoading(true);
     try {
-      const response = await api.search(body, requestController.signal);
-      if (requestController.signal.aborted) return;
+      const cached = pageCache.current.get(target);
+      const hit = cached && Date.now() - cached.at < 14 * 60000;
+      const body: SearchRequest = {
+        ...base,
+        page: target,
+        page_size: size,
+        sort: nextSort,
+        highlight: nextMode === 'all' ? undefined : nextHighlight,
+        highlight_mode: nextMode,
+        cursor: cursors.current.get(target) ?? cursors.current.get(1) ?? null,
+      };
+      const response = hit ? cached.result : await api.search(body, active.signal);
+      if (active.signal.aborted) return;
+      const actualPage = response.page ?? target;
+      if (response.current_cursor) cursors.current.set(actualPage, response.current_cursor);
+      if (response.next_cursor) cursors.current.set(actualPage + 1, response.next_cursor);
+      if (nextMode === 'all')
+        countSnapshot.current = { cursor: response.current_cursor ?? null, sort: nextSort };
+      if (!hit) {
+        pageCache.current.set(actualPage, { result: response, at: queryStartedAt.current });
+        if (pageCache.current.size > 6)
+          pageCache.current.delete(pageCache.current.keys().next().value!);
+        if (response.highlight_counts) setCounts(response.highlight_counts);
+      }
       setResult(response);
-      setSearch(body);
-      setPage(nextPage);
-      setCursors((previous) => {
-        const next = nextPage === 1 ? [null] : [...previous];
-        next[nextPage - 1] = response.current_cursor ?? body.cursor;
-        return next;
-      });
+      setPage(actualPage);
+      setSort(nextSort);
+      setHighlightMode(nextMode);
+      if (options.fresh || size !== search?.page_size) setSearch({ ...base, page_size: size });
       setConditions((previous) => ({
         ...previous,
-        start: formatDate(body.time_range.start),
-        end: formatDate(body.time_range.end),
+        pageSize: size,
+        start: formatDate(base.time_range.start),
+        end: formatDate(base.time_range.end),
       }));
     } catch (err) {
-      if (!requestController.signal.aborted) setError((err as Error).message);
+      if (!active.signal.aborted) setError((err as Error).message);
     } finally {
-      if (!requestController.signal.aborted) setLoading(false);
+      if (!active.signal.aborted) setLoading(false);
     }
+  };
+  const runSearch = (override?: Conditions) => {
+    try {
+      const body = toRequest(override ?? conditions);
+      setSelected(null);
+      setHighlightedColumn(null);
+      setCounts({ transaction: 0, cell: 0, any: 0 });
+      void requestRows(body, 1, {
+        fresh: true,
+        mode: 'all',
+        highlight: { transaction_name: '', column: null, value: null },
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  useEffect(() => {
+    if (!search || !selected || highlightMode !== 'all') {
+      setCountLoading(false);
+      setCountError('');
+      return;
+    }
+    const active = new AbortController();
+    setCountLoading(true);
+    setCountError('');
+    const timer = window.setTimeout(() => {
+      api
+        .search(
+          {
+            ...search,
+            highlight,
+            highlight_mode: 'all',
+            page: 1,
+            cursor: countSnapshot.current?.cursor ?? null,
+            sort: countSnapshot.current?.sort,
+            count_only: true,
+          },
+          active.signal,
+        )
+        .then((response) => {
+          if (!active.signal.aborted && response.highlight_counts)
+            setCounts(response.highlight_counts);
+        })
+        .catch((err) => {
+          if (!active.signal.aborted) setCountError((err as Error).message);
+        })
+        .finally(() => {
+          if (!active.signal.aborted) setCountLoading(false);
+        });
+    }, 150);
+    return () => {
+      clearTimeout(timer);
+      active.abort();
+    };
+  }, [search, selected, highlight, highlightMode]);
+  const selectRow = (row: LogRecord, column?: LogColumn) => {
+    if (loading) return;
+    setSelected(row);
+    setHighlightedColumn(column ?? null);
+    if (search && highlightMode !== 'all')
+      void requestRows(search, 1, {
+        mode:
+          highlightMode === 'cell' && !column
+            ? transactionHighlightName(row)
+              ? 'transaction'
+              : 'all'
+            : highlightMode,
+        highlight: {
+          transaction_name: transactionHighlightName(row),
+          row_id: row.id,
+          column: column ?? null,
+          value: column ? row[column] : null,
+        },
+      });
   };
   const expiredDummy =
     !!metadata?.latest_at && Date.parse(metadata.latest_at) <= Date.now() - 7 * 86400000;
@@ -123,7 +262,7 @@ export default function Workspace({
       end: formatDate(new Date(end)),
     };
     changeConditions(next);
-    void runSearch(1, false, next);
+    runSearch(next);
   };
   const openExport = () => {
     setExportError('');
@@ -151,13 +290,14 @@ export default function Workspace({
     }
   };
   const related = (row: LogRecord) => {
-    if (!transactionIdentity(row, program)) {
+    const transactionId = row[programs[program].transactionField].trim();
+    if (!transactionId) {
       onMessage(`선택한 로그에 ${programs[program].transactionLabel}가 없습니다.`);
       return;
     }
     const params = new URLSearchParams({
       program,
-      ...(program === 'acell' ? { g: row.global_transaction_id } : { key: row.transaction_key }),
+      ...(program === 'acell' ? { g: transactionId } : { key: transactionId }),
       ...(search ? { start: search.time_range.start, end: search.time_range.end } : {}),
     });
     window.open(`${window.location.pathname}#${params}`, '_blank', 'noopener,noreferrer');
@@ -219,15 +359,38 @@ export default function Workspace({
         loading={loading}
         status={status}
         selected={selected}
-        selectedTransaction={selected ? transactionIdentity(selected, program) : ''}
-        highlighted={highlighted}
+        highlight={highlight}
+        highlightMode={highlightMode}
+        counts={counts}
+        countLoading={countLoading}
+        countError={countError}
+        sort={sort}
         page={page}
-        onSelect={(row, value) => {
-          setSelected(row);
-          if (value) setHighlighted(value);
+        onSelect={selectRow}
+        onPage={(target) => {
+          if (search) void requestRows(search, target);
         }}
-        onPage={(direction) => void runSearch(page + direction, true)}
-        onPageSize={(size) => changeConditions({ ...conditions, pageSize: size })}
+        onSort={(next) => {
+          if (search) void requestRows(search, 1, { sort: next });
+          else setSort(next);
+        }}
+        onHighlightMode={(mode) => {
+          if (search) void requestRows(search, 1, { mode });
+        }}
+        onClearHighlights={() => {
+          setSelected(null);
+          setHighlightedColumn(null);
+          setCounts({ transaction: 0, cell: 0, any: 0 });
+          if (search && highlightMode !== 'all')
+            void requestRows(search, 1, {
+              mode: 'all',
+              highlight: { transaction_name: '', column: null, value: null },
+            });
+        }}
+        onPageSize={(size) => {
+          if (search) void requestRows(search, 1, { size });
+          else setConditions((previous) => ({ ...previous, pageSize: size }));
+        }}
         onRelated={related}
         onMessage={onMessage}
         onDate={(date) =>

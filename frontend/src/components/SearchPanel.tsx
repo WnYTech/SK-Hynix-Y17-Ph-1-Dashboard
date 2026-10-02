@@ -14,6 +14,7 @@ import type { Conditions, Fields, Metadata } from '../types';
 import { emptyFields, presetRange, timePresets } from '../lib/conditions';
 import { programs } from '../lib/programs';
 import SelectField from './SelectField';
+import DateTimeField from './DateTimeField';
 
 interface Props {
   conditions: Conditions;
@@ -95,6 +96,7 @@ export default function SearchPanel({
         </div>
       </div>
       <form
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           onSearch();
@@ -107,6 +109,20 @@ export default function SearchPanel({
             <span>KST · UTC+09:00</span>
             <span className="retention">최근 7일 이내</span>
           </div>
+          <div className="time-shortcuts" role="group" aria-label="빠른 조회 기간">
+            {timePresets
+              .filter(([value]) => ['15m', '1h', '6h', '24h', '7d'].includes(value))
+              .map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  aria-pressed={c.preset === value}
+                  onClick={() => onChange({ ...c, preset: value, ...presetRange(value) })}
+                >
+                  {label}
+                </button>
+              ))}
+          </div>
           <div className="time-controls">
             <SelectField
               label="조회 기간 프리셋"
@@ -116,20 +132,16 @@ export default function SearchPanel({
               }
               options={timePresets.map(([value, label]) => ({ value, label }))}
             />
-            <input
-              aria-label="시작 시간"
+            <DateTimeField
+              label="시작 시간"
               value={c.start}
-              onChange={(e) => onChange({ ...c, start: e.target.value, preset: 'custom' })}
-              placeholder="YYYY-MM-DD HH:mm:ss"
-              spellCheck={false}
+              onChange={(value) => onChange({ ...c, start: value, preset: 'custom' })}
             />
             <span className="range-separator">→</span>
-            <input
-              aria-label="종료 시간"
+            <DateTimeField
+              label="종료 시간"
               value={c.end}
-              onChange={(e) => onChange({ ...c, end: e.target.value, preset: 'custom' })}
-              placeholder="YYYY-MM-DD HH:mm:ss"
-              spellCheck={false}
+              onChange={(value) => onChange({ ...c, end: value, preset: 'custom' })}
             />
           </div>
         </div>

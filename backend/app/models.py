@@ -1,27 +1,61 @@
 """Public API contract. No production field names are assumed before mapping."""
 
 from datetime import datetime, timedelta, timezone
+import re
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, PrivateAttr, field_serializer, model_validator
 
 
 class Contract(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
+def epoch_nanoseconds(value: datetime) -> int:
+    delta = value - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return (delta.days * 86400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1000
+
+
 class TimeRange(Contract):
     start: AwareDatetime
     end: AwareDatetime
+    _start_ns: int = PrivateAttr(default=0)
+    _end_ns: int = PrivateAttr(default=0)
 
-    @model_validator(mode="after")
-    def validate_window(self):
-        now = datetime.now(timezone.utc)
-        if self.start >= self.end:
+    @property
+    def start_ns(self):
+        return self._start_ns
+
+    @property
+    def end_ns(self):
+        return self._end_ns
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def validate_window(cls, raw, handler):
+        result = handler(raw)
+        if not isinstance(raw, cls):
+            for name in ("start", "end"):
+                value = raw.get(name) if isinstance(raw, dict) else None
+                parsed = getattr(result, name)
+                nanos = epoch_nanoseconds(parsed)
+                fraction = re.search(r"[Tt ]\d{2}:\d{2}:\d{2}[.,](\d+)", value) if isinstance(value, str) else None
+                if fraction:
+                    digits = fraction[1]
+                    if len(digits) > 9:
+                        raise ValueError("소수점 아래 시간은 나노초까지 최대 9자리입니다.")
+                    nanos = nanos - parsed.microsecond * 1000 + int(digits.ljust(9, "0"))
+                setattr(result, f"_{name}_ns", nanos)
+        if result.start_ns >= result.end_ns:
             raise ValueError("시작 시간은 종료 시간보다 빨라야 합니다.")
-        if self.end > now + timedelta(seconds=5):
+        if result.end_ns > epoch_nanoseconds(datetime.now(timezone.utc) + timedelta(seconds=5)):
             raise ValueError("미래 시간은 조회할 수 없습니다.")
-        return self
+        return result
+
+    @field_serializer("start", "end")
+    def serialize_time(self, value, info):
+        nanos = getattr(self, f"_{info.field_name}_ns")
+        return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + f".{nanos % 1_000_000_000:09d}Z"
 
 
 class Filters(Contract):
@@ -52,6 +86,31 @@ class Filters(Contract):
         return self
 
 
+LogColumn = Literal[
+    "datetime", "system", "process", "server", "sequence", "log_type", "transaction_name",
+    "class_name", "transaction_key", "global_transaction_id", "global_transaction_sequence",
+    "event_transaction_id", "service_transaction_id", "lot", "eqp", "elapsed_ms", "message",
+]
+
+
+class Sort(Contract):
+    field: LogColumn = "datetime"
+    direction: Literal["asc", "desc"] = "desc"
+
+
+class Highlight(Contract):
+    transaction_name: str = Field(default="", max_length=10000)
+    column: LogColumn | None = None
+    row_id: str | None = Field(default=None, max_length=200)
+    # Retained for older clients; identity is row_id + column, never cell value.
+    value: str | float | None = None
+
+    @model_validator(mode="after")
+    def normalize_name(self):
+        self.transaction_name = self.transaction_name.strip()
+        return self
+
+
 class SearchRequest(Contract):
     program: Literal["acell", "arc"] = "acell"
     time_range: TimeRange
@@ -59,12 +118,17 @@ class SearchRequest(Contract):
     correlate: bool = False
     page_size: int = Field(default=1000, ge=1, le=1000)
     cursor: str | None = Field(default=None, max_length=8192)
+    page: int | None = Field(default=None, ge=1, le=10000000)
+    sort: Sort = Field(default_factory=Sort)
+    highlight: Highlight = Field(default_factory=Highlight)
+    highlight_mode: Literal["all", "transaction", "cell", "any"] = "all"
+    count_only: bool = False
 
     @model_validator(mode="after")
     def require_transaction_for_all_systems(self):
         # A signed, short-lived cursor pins the original search interval. Validate
         # retention on the first page; the repository validates cursor expiry.
-        if not self.cursor and self.time_range.start < datetime.now(timezone.utc) - timedelta(days=7):
+        if not self.cursor and self.time_range.start_ns < epoch_nanoseconds(datetime.now(timezone.utc) - timedelta(days=7)):
             raise ValueError("최근 7일 이내의 로그만 조회할 수 있습니다.")
         key = self.filters.global_transaction_id if self.program == "acell" else self.filters.transaction_key
         if not self.filters.systems and not key:
@@ -81,6 +145,7 @@ class SearchRequest(Contract):
 
 
 class LogRecord(Contract):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     id: str
     datetime: AwareDatetime
     system: str = ""
@@ -107,6 +172,10 @@ class SearchResponse(Contract):
     current_cursor: str | None = None
     total: int | None = None
     took_ms: float
+    page: int = 1
+    total_pages: int = 0
+    base_total: int | None = None
+    highlight_counts: dict[str, int] | None = None
 
 
 class ExportRequest(Contract):

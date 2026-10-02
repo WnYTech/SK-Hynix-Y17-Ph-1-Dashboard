@@ -1,6 +1,4 @@
-/* Acell / ARC only. Structure follows active WeshBoard panels and controls.
-   Red/orange accent tones follow the user-provided SK hynix logo.
-   Keep this scoped so the other pages retain their existing presentation. */
+/* Shared workspace theme: active WeshBoard panels and controls, SK hynix accents. */
 .log-design {
   --ws-background: #f5f5f6;
   --ws-surface: #fff;
@@ -398,6 +396,7 @@
 .log-design .add-viewer {
   color: var(--ws-primary-text);
   min-width: 42px;
+  min-height: 52px;
   padding: 0;
 }
 .log-design .add-viewer:hover:not(:disabled) {
@@ -405,6 +404,7 @@
 }
 .log-design .layout-controls {
   gap: 4px;
+  margin-left: auto;
   padding: 0;
 }
 .log-design .layout-controls > span {
@@ -754,7 +754,7 @@
   font-size: 13px;
 }
 
-/* Results keep their existing transaction/value highlight semantics. */
+/* Both viewers highlight matching transaction names and one selected cell. */
 .log-design .results-panel .panel-heading {
   min-height: 68px;
 }
@@ -814,7 +814,18 @@
   box-shadow: inset 3px 0 var(--ws-primary);
 }
 .log-design .selected-row:not(.related-row) {
-  background: var(--ws-primary-pale);
+  background: var(--ws-surface-soft);
+}
+.log-design .log-table tr.related-row > td,
+.log-design .log-table tr.related-row:hover > td {
+  background: #fbebf7;
+}
+.log-design .log-table tr.selected-row > .number-column {
+  box-shadow: inset 3px 0 var(--ws-primary);
+}
+.log-design .log-table tr > td.highlighted-cell,
+.log-design .log-table tr:hover > td.highlighted-cell {
+  background: #fff0b6;
 }
 .log-design .results-empty {
   background: var(--ws-surface);
@@ -1181,5 +1192,639 @@
   }
   .log-design .dummy-source-banner .button {
     width: 100%;
+  }
+}
+
+/* Date selection and result controls share the same 42px control rhythm. */
+.log-design .results-panel .panel-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.log-design .results-panel .panel-heading > .button-group {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.log-design .results-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ws-divider);
+}
+.log-design .highlight-control,
+.log-design .highlight-control label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.log-design .highlight-control strong {
+  font-variant-numeric: tabular-nums;
+}
+.log-design .highlight-control input[type='color'] {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--ws-border);
+  border-radius: 6px;
+  cursor: pointer;
+  background: white;
+}
+.log-design .highlight-filter {
+  flex: 1 1 210px;
+  max-width: 260px;
+  min-width: 0;
+}
+.log-design .highlight-filter .select-field {
+  width: 100%;
+}
+.log-design .results-summary {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--ws-muted);
+}
+.log-design .selected-value-summary {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.log-design .results-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ws-primary);
+}
+.log-design .virtual-table {
+  table-layout: fixed;
+}
+.log-design .virtual-table th {
+  height: 46px;
+  padding: 0 10px;
+}
+.log-design .column-sort {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.log-design .column-sort svg {
+  flex-shrink: 0;
+}
+.log-design .virtual-table th[aria-sort='ascending'],
+.log-design .virtual-table th[aria-sort='descending'] {
+  color: var(--ws-primary);
+}
+.log-design .virtual-table td {
+  height: 44px;
+  box-sizing: border-box;
+}
+.log-design .virtual-table .cell-button {
+  height: 43px;
+  padding-top: 0;
+  padding-bottom: 0;
+  color: inherit;
+}
+.log-design .virtual-table .virtual-spacer td {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.log-design .virtual-table tr.related-row > td,
+.log-design .virtual-table tr.related-row:hover > td {
+  background: var(--transaction-highlight);
+  color: var(--transaction-text);
+}
+.log-design .virtual-table tr > td.highlighted-cell,
+.log-design .virtual-table tr:hover > td.highlighted-cell {
+  background: var(--cell-highlight);
+  color: var(--cell-text);
+}
+.log-design .table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+}
+.log-design .pagination {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.log-design .page-number,
+.log-design .pagination .current-page {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--ws-border);
+  border-radius: 6px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--ws-surface);
+  color: var(--ws-text);
+}
+.log-design .pagination .current-page {
+  background: var(--ws-primary-pale);
+  color: var(--ws-primary-text);
+  border-color: var(--ws-primary-border);
+  opacity: 1;
+}
+.log-design .page-number:hover {
+  border-color: var(--ws-primary);
+  background: var(--ws-primary-pale);
+}
+.log-design .page-jump {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+.log-design .page-jump input {
+  width: 78px;
+  min-width: 0;
+}
+.log-design .result-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 14px;
+  color: var(--ws-muted);
+  font-variant-numeric: tabular-nums;
+}
+.log-design .column-order-list {
+  max-height: min(55vh, 500px);
+  overflow: auto;
+}
+.log-design .column-order-list > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--ws-divider);
+}
+.log-design .column-order-list > div > span {
+  flex: 1;
+  font-size: 15px;
+}
+@media (max-width: 700px) {
+  .log-design .results-panel .panel-heading > .button-group {
+    width: 100%;
+  }
+  .log-design .table-find {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+  .log-design .table-find input {
+    min-width: 0;
+    width: 100%;
+  }
+  .log-design .results-toolbar {
+    gap: 10px;
+  }
+  .log-design .highlight-filter {
+    max-width: none;
+  }
+  .log-design .pagination {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+    gap: 2px;
+  }
+  .log-design .pagination .icon-button {
+    width: 100%;
+    min-width: 0;
+  }
+  .log-design .pagination .page-number,
+  .log-design .pagination .current-page {
+    width: 100%;
+  }
+  .log-design .table-footer {
+    padding: 12px;
+  }
+}
+
+/* Direct range selection and persistent table tools. */
+.log-design .direct-calendar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  height: 42px;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-secondary);
+}
+.log-design .direct-calendar:hover,
+.log-design .direct-calendar:focus-within {
+  border-color: var(--ws-primary);
+  color: var(--ws-primary);
+  background: var(--ws-primary-pale);
+}
+.log-design .time-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+.log-design .time-shortcuts button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--ws-border);
+  border-radius: 6px;
+  background: var(--ws-surface);
+  color: var(--ws-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.log-design .time-shortcuts button:hover,
+.log-design .time-shortcuts button[aria-pressed='true'],
+.log-design .highlight-filter button[aria-pressed='true'] {
+  background: var(--ws-primary-soft);
+  border-color: var(--ws-primary-border);
+  color: var(--ws-primary-text);
+}
+.log-design .highlight-title {
+  font-size: 15px;
+}
+.log-design .highlight-control {
+  padding: 6px 10px;
+  border: 1px solid var(--ws-border);
+  border-radius: 8px;
+  background: var(--ws-surface-soft);
+}
+.log-design .highlight-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 100%;
+  max-width: none;
+}
+.log-design .table-instructions {
+  padding: 6px 16px 12px;
+  font-size: 14px;
+  color: var(--ws-muted);
+}
+.log-design .virtual-table th {
+  position: sticky;
+  padding-right: 16px;
+}
+.log-design .column-sort {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.log-design .column-resize {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  border-right: 2px solid var(--ws-border);
+}
+.log-design .column-resize:hover,
+.log-design .column-resize:focus-visible {
+  border-right-color: var(--ws-primary);
+  background: var(--ws-primary-soft);
+  outline: none;
+}
+
+/* The same active theme now includes downloads, saved conditions and connections. */
+.log-design .management-panel .panel-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.log-design .management-empty {
+  gap: 12px;
+  padding: 40px 24px;
+}
+.log-design .management-empty > svg {
+  color: var(--ws-accent);
+  background: var(--ws-accent-soft);
+  border: 1px solid var(--ws-accent-border);
+  border-radius: 12px;
+  box-sizing: content-box;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+.log-design .management-empty h3,
+.log-design .saved-item h3 {
+  color: var(--ws-text);
+  font-weight: 650;
+  font-size: 18px;
+}
+.log-design .management-empty p,
+.log-design .saved-item p,
+.log-design .muted-text {
+  color: var(--ws-secondary);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.log-design .saved-list {
+  padding: 8px 20px;
+}
+.log-design .saved-item {
+  border-color: var(--ws-divider);
+}
+.log-design .saved-item > div {
+  min-width: 0;
+}
+.log-design .saved-icon,
+.log-design .connection-card-icon {
+  flex-shrink: 0;
+  color: var(--ws-accent-text);
+  background: var(--ws-accent-soft);
+  border: 1px solid var(--ws-accent-border);
+  border-radius: var(--ws-radius);
+}
+.log-design .connection-card {
+  padding: 24px;
+  min-width: 0;
+}
+.log-design .connection-card h2 {
+  color: var(--ws-text);
+  font-size: 22px;
+  font-weight: 650;
+}
+.log-design .connection-card dl {
+  border-color: var(--ws-divider);
+  font-size: 15px;
+}
+.log-design .connection-card dt {
+  color: var(--ws-muted);
+}
+.log-design .connection-card dd {
+  color: var(--ws-text);
+  overflow-wrap: anywhere;
+}
+.log-design .connection-card .button-group {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .log-design .connection-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .log-design .connection-card {
+    padding: 20px;
+  }
+  .log-design .management-empty {
+    padding: 28px 16px;
+  }
+  .log-design .saved-item {
+    flex-wrap: wrap;
+  }
+  .log-design .saved-item > div {
+    flex-basis: calc(100% - 60px);
+  }
+}
+
+/* An explicit 24-hour calendar; browser locale cannot insert AM/PM controls. */
+.log-design .time-controls {
+  grid-template-columns: minmax(0, 1fr);
+}
+.log-design .time-controls > .range-separator {
+  display: none;
+}
+.log-design .datetime-field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.log-design .datetime-label {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ws-secondary);
+}
+.log-design .datetime-label > span {
+  color: var(--ws-muted);
+  font-weight: 400;
+}
+.log-design .datetime-entry {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+}
+.log-design .datetime-entry > input {
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .datetime-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 16px;
+  width: min(370px, calc(100vw - 24px));
+  box-sizing: border-box;
+  overflow-y: auto;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  box-shadow: var(--ws-popup-shadow);
+}
+.log-design .datetime-popup-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.log-design .datetime-popup-heading strong {
+  font-size: 16px;
+}
+.log-design .datetime-popup-heading > span {
+  color: var(--ws-muted);
+  font-size: 14px;
+}
+.log-design .datetime-popup-heading > button {
+  margin-left: auto;
+}
+.log-design .calendar-month {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0;
+}
+.log-design .calendar-month strong {
+  font-size: 16px;
+}
+.log-design .calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.log-design .calendar-weekday {
+  text-align: center;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--ws-muted);
+}
+.log-design .calendar-days button {
+  min-width: 0;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  font-size: 14px;
+}
+.log-design .calendar-days button:disabled {
+  background: var(--ws-surface);
+  border-color: transparent;
+  color: #a1a1a8;
+}
+.log-design .calendar-days button[aria-current='date'] {
+  border-color: var(--ws-accent-border);
+}
+.log-design .calendar-days button:hover:not(:disabled),
+.log-design .calendar-days button[aria-pressed='true']:not(:disabled) {
+  background: var(--ws-primary-soft);
+  color: var(--ws-primary-text);
+  border-color: var(--ws-primary-border);
+  font-weight: 650;
+}
+.log-design .calendar-time {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(100px, 1.5fr);
+  gap: 8px;
+  border-top: 1px solid var(--ws-divider);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+.log-design .calendar-time-field {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.log-design .calendar-time-field > label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.log-design .calendar-time small {
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+.log-design .calendar-time input[type='text'] {
+  width: 100%;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .calendar-time input[aria-invalid='true'] {
+  border-color: var(--ws-danger);
+  background: var(--ws-danger-soft);
+}
+.log-design .calendar-preview {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--ws-surface-soft);
+  border-radius: 6px;
+}
+.log-design .calendar-preview span {
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+.log-design .calendar-preview output {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .calendar-hint {
+  font-size: 13px;
+  color: var(--ws-secondary);
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.log-design .calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.log-design .calendar-footer > span {
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+.log-design .calendar-wheel-hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--ws-secondary);
+  line-height: 1.6;
+}
+.log-design .time-wheel {
+  position: relative;
+  height: 92px;
+  overflow: hidden;
+  border: 1px solid var(--ws-border);
+  border-radius: 6px;
+  background: var(--ws-surface-soft);
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.log-design .time-wheel:active {
+  cursor: grabbing;
+}
+.log-design .time-wheel:focus-visible {
+  outline: 2px solid var(--ws-primary);
+  outline-offset: 2px;
+}
+.log-design .time-wheel::before {
+  content: '';
+  position: absolute;
+  inset: 30px 0 auto;
+  height: 30px;
+  background: var(--ws-primary-soft);
+  border-block: 1px solid var(--ws-primary-border);
+  pointer-events: none;
+}
+.log-design .time-wheel-values {
+  position: relative;
+  pointer-events: none;
+}
+.log-design .time-wheel-values > span {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  font-size: 14px;
+  color: var(--ws-muted);
+  font-variant-numeric: tabular-nums;
+}
+.log-design .time-wheel-values > .wheel-selected {
+  font-weight: 650;
+  color: var(--ws-primary-text);
+}
+.log-design .time-wheel.is-snapping .time-wheel-values {
+  transition: transform 100ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .log-design .time-wheel.is-snapping .time-wheel-values {
+    transition: none;
   }
 }

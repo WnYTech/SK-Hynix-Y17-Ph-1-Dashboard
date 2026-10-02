@@ -103,7 +103,20 @@ export default function DetailPanel({ program, selected, search, onMessage }: Pr
     if (currentTab === 'event_transaction_id') filters.event_transaction_id = [transactionId];
     setBusy(true);
     api
-      .search({ ...search, filters, correlate: false, cursor }, controller.signal)
+      .search(
+        {
+          ...search,
+          filters,
+          correlate: false,
+          cursor,
+          page: undefined,
+          sort: { field: 'datetime', direction: 'asc' },
+          highlight: undefined,
+          highlight_mode: 'all',
+          count_only: false,
+        },
+        controller.signal,
+      )
       .then((result) => {
         if (!controller.signal.aborted)
           setRelated((previous) =>

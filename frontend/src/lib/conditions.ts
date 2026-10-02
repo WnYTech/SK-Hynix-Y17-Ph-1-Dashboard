@@ -22,7 +22,9 @@ export const emptyFields: Fields = {
 };
 
 export const timePresets = [
+  ['5m', '최근 5분'],
   ['15m', '최근 15분'],
+  ['30m', '최근 30분'],
   ['1h', '최근 1시간'],
   ['6h', '최근 6시간'],
   ['24h', '최근 24시간'],
@@ -32,15 +34,20 @@ export const timePresets = [
 
 export function formatDate(value: string | Date): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? String(value)
-    : new Date(date.getTime() + 9 * 3600000).toISOString().replace('T', ' ').replace('Z', '');
+  if (Number.isNaN(date.getTime())) return String(value);
+  const formatted = new Date(date.getTime() + 9 * 3600000)
+    .toISOString()
+    .replace('T', ' ')
+    .replace('Z', '');
+  return formatted;
 }
 
 export function presetRange(preset: string) {
   const end = new Date();
   const durations: Record<string, number> = {
+    '5m': 5 * 60000,
     '15m': 15 * 60000,
+    '30m': 30 * 60000,
     '1h': 3600000,
     '6h': 6 * 3600000,
     '24h': 24 * 3600000,
@@ -83,7 +90,10 @@ export function parseDate(value: string): Date {
   const match = normalized.match(
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})?$/,
   );
-  if (!match) throw new Error('시간을 YYYY-MM-DD HH:mm:ss 형식으로 입력해 주세요.');
+  if (!match)
+    throw new Error(
+      '시간을 YYYY-MM-DD HH:mm:ss.SSS 형식으로 입력해 주세요. 밀리초(ms)는 소수점 아래 최대 3자리입니다.',
+    );
   const [, y, m, d, h, minute, s = '0'] = match;
   const days = new Date(Date.UTC(Number(y), Number(m), 0)).getUTCDate();
   if (+m < 1 || +m > 12 || +d < 1 || +d > days || +h > 23 || +minute > 59 || +s > 59)
@@ -99,9 +109,10 @@ export function toRequest(conditions: Conditions): SearchRequest {
   const start = parseDate(range.start),
     end = parseDate(range.end);
   const now = Date.now();
-  if (+start >= +end) throw new Error('시작 시간은 종료 시간보다 빨라야 합니다.');
-  if (+start < now - 7 * 86400000) throw new Error('최근 7일 이내의 로그만 조회할 수 있습니다.');
-  if (+end > now + 5000) throw new Error('미래 시간은 조회할 수 없습니다.');
+  if (start.getTime() >= end.getTime()) throw new Error('시작 시간은 종료 시간보다 빨라야 합니다.');
+  if (start.getTime() < now - 7 * 86400000)
+    throw new Error('최근 7일 이내의 로그만 조회할 수 있습니다.');
+  if (end.getTime() > now + 5000) throw new Error('미래 시간은 조회할 수 없습니다.');
   const config = programs[conditions.program];
   const fields = { ...emptyFields };
   for (const key of config.fields) fields[key] = conditions.fields[key];
@@ -143,7 +154,9 @@ export function isConditions(value: unknown): value is Conditions {
 }
 
 export function normalizeConditions(value: Conditions): Conditions {
-  // Preserve existing saved input and migrate older saves to their own program.
+  // Preserve saved fields and migrate older program and sub-millisecond values.
+  const milliseconds = (time: string) =>
+    time.replace(/(\.\d{3})\d{1,6}(?=(?:Z|[+-]\d{2}:\d{2})?$)/, '$1');
   const fields = { ...emptyFields };
   for (const key of Object.keys(fields) as (keyof Fields)[]) fields[key] = value.fields[key];
   const legacy = value as Conditions & { profile?: unknown };
@@ -159,8 +172,8 @@ export function normalizeConditions(value: Conditions): Conditions {
     program,
     fields,
     preset: value.preset,
-    start: value.start,
-    end: value.end,
+    start: milliseconds(value.start),
+    end: milliseconds(value.end),
     correlate: value.correlate,
     pageSize: value.pageSize,
   };

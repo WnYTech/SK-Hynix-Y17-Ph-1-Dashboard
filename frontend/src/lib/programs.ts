@@ -1,4 +1,4 @@
-import type { Fields, LogRecord, Program } from '../types';
+import type { Fields, LogColumn, Program } from '../types';
 
 const commonFields: (keyof Fields)[] = [
   'fab',
@@ -20,7 +20,7 @@ export const programs: Record<
     transactionField: 'global_transaction_id' | 'transaction_key';
     transactionLabel: string;
     fields: (keyof Fields)[];
-    columns: (keyof LogRecord)[];
+    columns: LogColumn[];
     tabs: [string, string][];
   }
 > = {

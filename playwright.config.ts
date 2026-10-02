@@ -6,7 +6,7 @@ export default defineConfig({
   workers: 2,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:5177',
+    baseURL: process.env.Y17_TEST_BASE_URL || 'http://127.0.0.1:5177',
     viewport: { width: 1440, height: 1000 },
     trace: 'retain-on-failure',
   },

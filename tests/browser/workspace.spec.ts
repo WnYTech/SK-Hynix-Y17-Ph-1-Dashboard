@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 const viewer = (page: Page) => page.locator('.program-workspace:visible .viewer-container:visible');
 const openProgram = (page: Page, name: 'M14N Acell LogViewer' | 'ARC LMS') =>
@@ -226,6 +226,8 @@ test('program links and a new window retain the selected program', async ({ page
   await expect(viewer(opened).getByLabel('트랜잭션 키', { exact: true })).toHaveValue('');
   await opened.close();
   await page.goto('/#program=acell&g=linked-global');
+  // Deep-link conditions are read when the app mounts, not on a hash-only change.
+  await page.reload();
   await expect(viewer(page).getByLabel('G 트랜잭션 ID', { exact: true })).toHaveValue(
     'linked-global',
   );

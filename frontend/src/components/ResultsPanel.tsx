@@ -12,7 +12,7 @@ import {
 import { useState } from 'react';
 import type { Conditions, LogRecord, SearchResponse, SourceStatus } from '../types';
 import { formatDate } from '../lib/conditions';
-import { transactionIdentity } from '../lib/transactions';
+import { transactionHighlightName } from '../lib/transactions';
 import { programs } from '../lib/programs';
 import SelectField from './SelectField';
 
@@ -44,9 +44,9 @@ interface Props {
   status: SourceStatus;
   selected: LogRecord | null;
   selectedTransaction: string;
-  highlighted: string;
+  highlightedColumn: keyof LogRecord | null;
   page: number;
-  onSelect: (row: LogRecord, value?: string) => void;
+  onSelect: (row: LogRecord, column?: keyof LogRecord) => void;
   onPage: (direction: number) => void;
   onPageSize: (size: number) => void;
   onRelated: (row: LogRecord) => void;
@@ -61,7 +61,7 @@ export default function ResultsPanel({
   status,
   selected,
   selectedTransaction,
-  highlighted,
+  highlightedColumn,
   page,
   onSelect,
   onPage,
@@ -118,9 +118,9 @@ export default function ResultsPanel({
           </span>
           <span className="table-legend">
             <i className="pink-dot" />
-            동일 트랜잭션
+            동일 트랜잭션명
             <i className="yellow-dot" />
-            선택한 값
+            선택한 셀
           </span>
         </div>
         <div className="button-group">
@@ -161,10 +161,11 @@ export default function ResultsPanel({
               </thead>
               <tbody>
                 {rows.map((row, i) => {
-                  const transaction = transactionIdentity(row, conditions.program);
+                  const transaction = transactionHighlightName(row);
                   return (
                     <tr
                       key={row.id}
+                      data-log-id={row.id}
                       className={`${transaction && transaction === selectedTransaction ? 'related-row' : ''} ${selected?.id === row.id ? 'selected-row' : ''}`}
                       onContextMenu={(e) => {
                         e.preventDefault();
@@ -189,12 +190,17 @@ export default function ResultsPanel({
                         return (
                           <td
                             key={column.key}
-                            className={value && value === highlighted ? 'highlighted-cell' : ''}
+                            data-column={column.key}
+                            className={
+                              selected?.id === row.id && column.key === highlightedColumn
+                                ? 'highlighted-cell'
+                                : ''
+                            }
                           >
                             <button
                               className="cell-button"
                               title={value}
-                              onClick={() => onSelect(row, value)}
+                              onClick={() => onSelect(row, column.key)}
                             >
                               {content(value)}
                             </button>

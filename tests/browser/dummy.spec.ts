@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { LogRecord } from '../../frontend/src/types';
+import { expect, test, type Page } from './fixtures';
 
 // Keep large DOM snapshots from competing with another 1,000-row browser case.
 test.describe.configure({ mode: 'default', timeout: 60000 });
@@ -45,29 +46,43 @@ for (const [program, title, transactionTab] of [
       .getByRole('button', { name: '1', exact: true })
       .click();
     await expect(active.locator('.message-content')).toHaveText(first.items[0].message);
-    await expect(active.locator('.log-table .related-row')).toHaveCount(3);
+    const selectedName = first.items[0].transaction_name;
+    const sameNameCount = (items: LogRecord[]) =>
+      items.filter((item) => item.transaction_name === selectedName).length;
+    await expect(active.locator('.log-table .related-row')).toHaveCount(sameNameCount(first.items));
     await detail.getByRole('combobox', { name: '로그 표시 형식' }).click();
     await page.getByRole('option', { name: 'JSON', exact: true }).click();
     await expect(active.locator('.message-content')).toContainText('"dummy": true');
-    // Preserve a selected value when paging away and back.
+    // Preserve the transaction name and selected cell when paging away and back.
     await active
       .locator('.log-table tbody tr')
       .first()
       .getByRole('button', { name: 'TransactionHandler', exact: true })
       .click();
+    await expect(active.locator('.highlighted-cell')).toHaveCount(1);
+    const nextResponse = page.waitForResponse((r) => r.url().endsWith('/api/logs/search'));
     await active
       .locator('.pagination')
       .getByRole('button', { name: '다음 페이지', exact: true })
       .click();
+    const second = await (await nextResponse).json();
     await expect(active.locator('.current-page')).toHaveText('2');
     await expect(active.locator('.log-table tbody tr')).toHaveCount(1000);
-    await expect(active.locator('.highlighted-cell')).toHaveCount(1000);
+    await expect(active.locator('.log-table .related-row')).toHaveCount(
+      sameNameCount(second.items),
+    );
+    await expect(active.locator('.highlighted-cell')).toHaveCount(0);
     await active
       .locator('.pagination')
       .getByRole('button', { name: '이전 페이지', exact: true })
       .click();
     await expect(active.locator('.current-page')).toHaveText('1');
     await expect(active.locator('.log-table .selected-row')).toHaveCount(1);
+    await expect(active.locator('.log-table .related-row')).toHaveCount(sameNameCount(first.items));
+    await expect(active.locator('.highlighted-cell')).toHaveCount(1);
+    await expect(active.locator('.selected-row td[data-column="class_name"]')).toHaveClass(
+      /highlighted-cell/,
+    );
     await detail.getByRole('tab', { name: transactionTab, exact: true }).click();
     await expect(active.locator('.transaction-content article')).toHaveCount(12);
     for (const system of ['MES', 'EAP', 'FDC', 'APC']) {

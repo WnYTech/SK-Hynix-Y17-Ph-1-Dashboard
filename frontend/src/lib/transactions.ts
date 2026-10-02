@@ -1,8 +1,6 @@
-import type { LogRecord, Program } from '../types';
+import type { LogRecord } from '../types';
 
-export function transactionIdentity(row: LogRecord, program: Program): string {
-  if (program === 'acell' && row.global_transaction_id)
-    return `global:${row.global_transaction_id}`;
-  if (program === 'arc' && row.transaction_key) return `key:${row.transaction_key}`;
-  return '';
+// Both viewers group highlighted rows by transaction name, independently of IDs.
+export function transactionHighlightName(row: LogRecord): string {
+  return row.transaction_name.trim();
 }

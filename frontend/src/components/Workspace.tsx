@@ -12,7 +12,7 @@ import type {
 } from '../types';
 import { api } from '../lib/api';
 import { formatDate, initialConditions, toRequest } from '../lib/conditions';
-import { transactionIdentity } from '../lib/transactions';
+import { transactionHighlightName } from '../lib/transactions';
 import { programs } from '../lib/programs';
 import SearchPanel from './SearchPanel';
 import ResultsPanel from './ResultsPanel';
@@ -49,7 +49,7 @@ export default function Workspace({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<LogRecord | null>(null);
-  const [highlighted, setHighlighted] = useState('');
+  const [highlightedColumn, setHighlightedColumn] = useState<keyof LogRecord | null>(null);
   const [page, setPage] = useState(1);
   const [cursors, setCursors] = useState<(string | null)[]>([null]);
   const [exportOpen, setExportOpen] = useState(false);
@@ -70,7 +70,7 @@ export default function Workspace({
     setPage(1);
     setCursors([null]);
     setSelected(null);
-    setHighlighted('');
+    setHighlightedColumn(null);
   };
   const runSearch = async (nextPage = 1, paginate = false, override?: Conditions) => {
     let body: SearchRequest;
@@ -151,13 +151,14 @@ export default function Workspace({
     }
   };
   const related = (row: LogRecord) => {
-    if (!transactionIdentity(row, program)) {
+    const transactionId = row[programs[program].transactionField].trim();
+    if (!transactionId) {
       onMessage(`선택한 로그에 ${programs[program].transactionLabel}가 없습니다.`);
       return;
     }
     const params = new URLSearchParams({
       program,
-      ...(program === 'acell' ? { g: row.global_transaction_id } : { key: row.transaction_key }),
+      ...(program === 'acell' ? { g: transactionId } : { key: transactionId }),
       ...(search ? { start: search.time_range.start, end: search.time_range.end } : {}),
     });
     window.open(`${window.location.pathname}#${params}`, '_blank', 'noopener,noreferrer');
@@ -219,12 +220,12 @@ export default function Workspace({
         loading={loading}
         status={status}
         selected={selected}
-        selectedTransaction={selected ? transactionIdentity(selected, program) : ''}
-        highlighted={highlighted}
+        selectedTransaction={selected ? transactionHighlightName(selected) : ''}
+        highlightedColumn={highlightedColumn}
         page={page}
-        onSelect={(row, value) => {
+        onSelect={(row, column) => {
           setSelected(row);
-          if (value) setHighlighted(value);
+          setHighlightedColumn(column ?? null);
         }}
         onPage={(direction) => void runSearch(page + direction, true)}
         onPageSize={(size) => changeConditions({ ...conditions, pageSize: size })}

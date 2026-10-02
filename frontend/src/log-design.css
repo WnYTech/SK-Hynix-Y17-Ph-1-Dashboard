@@ -754,7 +754,7 @@
   font-size: 13px;
 }
 
-/* Results keep their existing transaction/value highlight semantics. */
+/* Both viewers highlight matching transaction names and one selected cell. */
 .log-design .results-panel .panel-heading {
   min-height: 68px;
 }
@@ -814,7 +814,18 @@
   box-shadow: inset 3px 0 var(--ws-primary);
 }
 .log-design .selected-row:not(.related-row) {
-  background: var(--ws-primary-pale);
+  background: var(--ws-surface-soft);
+}
+.log-design .log-table tr.related-row > td,
+.log-design .log-table tr.related-row:hover > td {
+  background: #fbebf7;
+}
+.log-design .log-table tr.selected-row > .number-column {
+  box-shadow: inset 3px 0 var(--ws-primary);
+}
+.log-design .log-table tr > td.highlighted-cell,
+.log-design .log-table tr:hover > td.highlighted-cell {
+  background: #fff0b6;
 }
 .log-design .results-empty {
   background: var(--ws-surface);

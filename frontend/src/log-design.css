@@ -396,6 +396,7 @@
 .log-design .add-viewer {
   color: var(--ws-primary-text);
   min-width: 42px;
+  min-height: 52px;
   padding: 0;
 }
 .log-design .add-viewer:hover:not(:disabled) {
@@ -403,6 +404,7 @@
 }
 .log-design .layout-controls {
   gap: 4px;
+  margin-left: auto;
   padding: 0;
 }
 .log-design .layout-controls > span {

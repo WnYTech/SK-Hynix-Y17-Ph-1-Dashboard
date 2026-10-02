@@ -4,7 +4,6 @@ import asyncio
 import base64
 from collections import OrderedDict
 from contextlib import closing
-from datetime import datetime
 import hashlib
 import hmac
 import json
@@ -27,10 +26,6 @@ FILTER_COLUMNS = {
     )},
 }
 NAME_INDEX_MIN_ROWS = 50000
-
-
-def microseconds(value: datetime) -> int:
-    return round(value.timestamp() * 1_000_000)
 
 
 class DummyRepository:
@@ -133,7 +128,9 @@ class DummyRepository:
 
     def predicate(self, request: SearchRequest) -> tuple[str, list]:
         parts = ["time_us >= ?", "time_us <= ?"]
-        params = [microseconds(request.time_range.start), microseconds(request.time_range.end)]
+        # Logs have integer microsecond timestamps. Ceil the lower bound and floor
+        # the upper bound so a nanosecond interval never includes an outside row.
+        params = [(request.time_range.start_ns + 999) // 1000, request.time_range.end_ns // 1000]
         filters = request.filters
         if filters.fab:
             parts.append("fab = ?")
@@ -165,7 +162,7 @@ class DummyRepository:
         if request.correlate:
             predicate = ("time_us >= ? AND time_us <= ? AND transaction_key IN "
                          f"(SELECT transaction_key FROM logs WHERE {predicate})")
-            params = [microseconds(request.time_range.start), microseconds(request.time_range.end), *params]
+            params = [(request.time_range.start_ns + 999) // 1000, request.time_range.end_ns // 1000, *params]
         selections = self.highlight_predicates(request)
         counts = None
         rows = []

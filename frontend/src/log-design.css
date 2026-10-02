@@ -1196,24 +1196,6 @@
 }
 
 /* Date selection and result controls share the same 42px control rhythm. */
-.log-design .datetime-field {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 4px;
-}
-.log-design .datetime-field > input {
-  min-width: 0;
-  width: 100%;
-}
-.log-design .datetime-field > button {
-  flex: 0 0 38px;
-}
-.log-design .calendar-datetime {
-  width: 100%;
-  min-width: 0;
-  color-scheme: light;
-}
 .log-design .results-panel .panel-heading {
   flex-wrap: wrap;
   gap: 12px;
@@ -1456,14 +1438,6 @@
   color: var(--ws-primary);
   background: var(--ws-primary-pale);
 }
-.log-design .direct-calendar input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  min-width: 0;
-  opacity: 0;
-  cursor: pointer;
-}
 .log-design .time-shortcuts {
   display: flex;
   flex-wrap: wrap;
@@ -1620,5 +1594,188 @@
   }
   .log-design .saved-item > div {
     flex-basis: calc(100% - 60px);
+  }
+}
+
+/* An explicit 24-hour calendar; browser locale cannot insert AM/PM controls. */
+.log-design .time-controls {
+  grid-template-columns: minmax(0, 1fr);
+}
+.log-design .time-controls > .range-separator {
+  display: none;
+}
+.log-design .datetime-field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.log-design .datetime-label {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ws-secondary);
+}
+.log-design .datetime-label > span {
+  color: var(--ws-muted);
+  font-weight: 400;
+}
+.log-design .datetime-entry {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+}
+.log-design .datetime-entry > input {
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .datetime-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 16px;
+  width: min(370px, calc(100vw - 24px));
+  box-sizing: border-box;
+  overflow-y: auto;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  box-shadow: var(--ws-popup-shadow);
+}
+.log-design .datetime-popup-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.log-design .datetime-popup-heading strong {
+  font-size: 16px;
+}
+.log-design .datetime-popup-heading > span {
+  color: var(--ws-muted);
+  font-size: 14px;
+}
+.log-design .datetime-popup-heading > button {
+  margin-left: auto;
+}
+.log-design .calendar-month {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0;
+}
+.log-design .calendar-month strong {
+  font-size: 16px;
+}
+.log-design .calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.log-design .calendar-weekday {
+  text-align: center;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--ws-muted);
+}
+.log-design .calendar-days button {
+  min-width: 0;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  font-size: 14px;
+}
+.log-design .calendar-days button:disabled {
+  background: var(--ws-surface);
+  border-color: transparent;
+  color: #a1a1a8;
+}
+.log-design .calendar-days button[aria-current='date'] {
+  border-color: var(--ws-accent-border);
+}
+.log-design .calendar-days button:hover:not(:disabled),
+.log-design .calendar-days button[aria-pressed='true']:not(:disabled) {
+  background: var(--ws-primary-soft);
+  color: var(--ws-primary-text);
+  border-color: var(--ws-primary-border);
+  font-weight: 650;
+}
+.log-design .calendar-time {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(112px, 1.8fr);
+  gap: 8px;
+  border-top: 1px solid var(--ws-divider);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+.log-design .calendar-time label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.log-design .calendar-time label > span {
+  font-size: 14px;
+  font-weight: 600;
+}
+.log-design .calendar-time small {
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+.log-design .calendar-time input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 6px;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .calendar-time input[aria-invalid='true'] {
+  border-color: var(--ws-danger);
+  background: var(--ws-danger-soft);
+}
+.log-design .calendar-preview {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--ws-surface-soft);
+  border-radius: 6px;
+}
+.log-design .calendar-preview span {
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+.log-design .calendar-preview output {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.log-design .calendar-hint {
+  font-size: 13px;
+  color: var(--ws-secondary);
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.log-design .calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.log-design .calendar-footer > span {
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+@media (max-width: 360px) {
+  .log-design .calendar-time {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .log-design .calendar-time .nano-field {
+    grid-column: 1 / -1;
   }
 }

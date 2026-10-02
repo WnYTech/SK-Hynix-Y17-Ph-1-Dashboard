@@ -42,20 +42,56 @@ for (const program of ['acell', 'arc']) {
     await expect(active.getByRole('combobox', { name: '조회 기간 프리셋' })).toHaveText(
       '최근 1시간',
     );
-    const target = new Date(Date.now() - 86400000 + 9 * 3600000).toISOString().slice(0, 19);
-    await active.getByLabel('시작 시간 달력 입력', { exact: true }).fill(target);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const target = new Date(Date.now() - 3 * 86400000 + 9 * 3600000).toISOString().slice(0, 10);
+    const [year, month, day] = target.split('-').map(Number);
+    await active.getByRole('button', { name: '시작 시간 달력 열기', exact: true }).click();
+    const calendar = page.getByRole('dialog', { name: '시작 시간 선택', exact: true });
+    await expect(calendar).toBeVisible();
+    await expect(calendar).not.toContainText(/오전|오후|AM|PM/);
+    if (target.slice(0, 7) !== new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7))
+      await calendar.getByRole('button', { name: '이전 달', exact: true }).click();
+    await calendar
+      .getByRole('button', { name: `${year}년 ${month}월 ${day}일`, exact: true })
+      .click();
+    for (const [unit, value] of [
+      ['시', '13'],
+      ['분', '14'],
+      ['초', '15'],
+      ['나노초 (ns)', '123456789'],
+    ])
+      await calendar.getByLabel(`시작 시간 ${unit}`, { exact: true }).fill(value);
     await expect(active.getByLabel('시작 시간', { exact: true })).toHaveValue(
-      target.replace('T', ' ') + '.000',
+      `${target} 13:14:15.123456789`,
     );
+    await expect(calendar.locator('output')).toHaveText(`${target} 13:14:15.123456789`);
     await expect(active.getByRole('combobox', { name: '조회 기간 프리셋' })).toHaveText(
       '직접 입력',
     );
     expect(searches).toBe(0);
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 740 });
+      const bounds = await calendar.boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+      expect(bounds!.y).toBeGreaterThanOrEqual(0);
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(740);
+      expect(await calendar.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(
+        1,
+      );
+      await calendar.screenshot({ path: `test-results/calendar-${program}-${width}.png` });
+    }
+    await calendar.getByLabel('시작 시간 초', { exact: true }).fill('60');
+    await expect(calendar.getByRole('alert')).toContainText('00~59');
+    await calendar.getByLabel('시작 시간 초', { exact: true }).fill('15');
+    await calendar.getByLabel('시작 시간 초', { exact: true }).press('Escape');
+    await expect(calendar).not.toBeVisible();
     const response = rowsResponse(page);
     await active.getByRole('button', { name: '검색', exact: true }).click();
     const request = (await response).request().postDataJSON();
-    expect(Date.parse(request.time_range.start)).toBe(Date.parse(target + '+09:00'));
+    expect(request.time_range.start).toBe(`${target}T04:14:15.123456789Z`);
+    await expect(active.getByLabel('시작 시간', { exact: true })).toHaveValue(
+      `${target} 13:14:15.123456789`,
+    );
   });
 
   test(`${program}: virtual rows, direct pages, final page and global sorting`, async ({
